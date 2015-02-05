@@ -1,0 +1,12 @@
+<suite name="BingTestSuite" preserve-order="true">
+
+    <test name="Bing">
+        <classes>
+            <class name="com.sios.stc.coseng.test.Bing" />
+            <methods>
+               <include name="connect"></include>
+            </methods>
+    </classes>
+    </test>
+
+</suite>

@@ -1,0 +1,16 @@
+<suite name="SmokeTestSuite" preserve-order="true">
+
+    <!-- ASSUMPTION: Testing a 'pristine' product instance -->
+
+    <test name="User">
+        <classes>
+            <class name="com.sios.stc.coseng.test.User" />
+            <methods>
+               <include name="invalidLogin"></include>
+               <include name="firstLogin"></include>
+               <include name="login"></include>
+            </methods>
+    </classes>
+    </test>
+
+</suite>

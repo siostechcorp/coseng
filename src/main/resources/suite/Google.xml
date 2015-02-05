@@ -1,0 +1,12 @@
+<suite name="GoogleTestSuite" preserve-order="true">
+
+    <test name="Google">
+        <classes>
+            <class name="com.sios.stc.coseng.test.Google" />
+            <methods>
+               <include name="connect"></include>
+            </methods>
+    </classes>
+    </test>
+
+</suite>

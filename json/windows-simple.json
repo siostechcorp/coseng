@@ -1,0 +1,28 @@
+{
+    "localParam" : {
+        "chromeDriver": "C:/Windows/System32/chromedriver.exe",
+        "ieDriver": "C:/Windows/System32/IEDriverServer.exe",
+        "testReportDirectory": "C:/Windows/Temp/testng",
+        "jarSuiteDirectory": "C:/Windows/Temp/testng/suite",
+        "jarSuiteOverwrite": false
+    },
+
+    "testParam": [
+        {
+            "testName": "chrome",
+            "verbosity": "0",
+            "spot": "LOCAL",
+            "platform": "WINDOWS",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Bing.xml"]
+        },
+        {
+            "testName": "firefox",
+            "verbosity": "0",
+            "spot": "LOCAL",
+            "platform": "WINDOWS",
+            "browser": "FIREFOX",
+            "suite": ["Bing.xml", "Google.xml"]
+        }
+    ]
+}

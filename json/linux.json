@@ -1,0 +1,139 @@
+{
+    "localParam" : {
+        "chromeDriver": "/usr/local/bin/chromedriver",
+        "testReportDirectory": "/tmp/testng",
+        "jarSuiteDirectory": "/tmp/testng/suite",
+        "jarSuiteOverwrite": false
+    },
+    "testParam": [
+        {
+            "testName": "test1-good",
+            "verbosity": "0",
+            "spot": "LOCAL",
+            "platform": "LINUX",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test2-good",
+            "spot": "LOCAL",
+            "platform": "LINUX",
+            "browser": "FIREFOX",
+            "suite": ["Google.xml", "Smoke.xml"]
+        },
+        {
+            "testName": "test3-good",
+            "spot": "GRID",
+            "platform": "LINUX",
+            "browser": "FIREFOX",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test4-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "FIREFOX",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test5-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test6-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "IE",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test7-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "IE9",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test8-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "IE10",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test9-good",
+            "spot": "GRID",
+            "platform": "WINDOWS",
+            "browser": "IE11",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24",
+            "gridUrl": "http://seleniumgrid.us.sios.com:4444/wd/hub"
+        },
+        {
+            "testName": "test10-bad",
+            "verbosity": "0",
+            "platform": "LINUX",
+            "browser": "IE9",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test11-bad",
+            "verbosity": "0",
+            "platform": "LINUX",
+            "browser": "SAFARI",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test12-bad",
+            "verbosity": "0",
+            "platform": "LINUX",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test13-bad",
+            "verbosity": "0",
+            "platform": "LINUX",
+            "browser": "CHROME",
+            "suite": ["GoogleNoFile.xml", "SmokeNoFile.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test14-bad",
+            "verbosity": "0",
+            "spot": "GRID",
+            "platform": "LINUX",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        },
+        {
+            "testName": "test15-bad",
+            "verbosity": "0",
+            "spot": "GRID",
+            "platform": "SUN",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Smoke.xml"],
+            "baseUrl": "https://testhost24"
+        }
+    ]
+}

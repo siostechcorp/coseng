@@ -1,0 +1,26 @@
+{
+    "localParam" : {
+        "chromeDriver": "/usr/local/bin/chromedriver",
+        "testReportDirectory": "/tmp/testng",
+        "jarSuiteDirectory": "/tmp/testng/suite",
+        "jarSuiteOverwrite": false
+    },
+    "testParam": [
+        {
+            "testName": "chrome",
+            "verbosity": "0",
+            "spot": "LOCAL",
+            "platform": "LINUX",
+            "browser": "CHROME",
+            "suite": ["Google.xml", "Bing.xml"]
+        },
+        {
+            "testName": "firefox",
+            "verbosity": "0",
+            "spot": "LOCAL",
+            "platform": "LINUX",
+            "browser": "FIREFOX",
+            "suite": ["Bing.xml", "Google.xml"]
+        }
+    ]
+}

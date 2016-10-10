@@ -1,0 +1,13 @@
+{
+    "tests": [
+        {
+            "name": "demo",
+            "location": "node",
+            "browser": "all",
+            "oneWebDriver": false,
+            "suites": [
+                "Demo.xml"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "tests": [
+        {
+            "name": "demo",
+            "location": "node",
+            "browser": "all",
+            "oneWebDriver": false,
+            "suites": [
+                "coseng/suites/demo/tests.xml",
+                "coseng/suites/demo/classes.xml",
+                "coseng/suites/demo/methods.xml"
+            ]
+        }
+    ]
+}

@@ -1,4 +1,5 @@
-# Concurrent Selenium TestNG Harness (COSENG)
-Concurrent Selenium TestNG Harness (COSENG) is a Java implementation of a concurrent Selenium/TestNG harness. Using this harness provides a means to conduct Selenium/TestNG UI testing of complex combinations of Selenium GRID/local, TestNG suites, diverse operating system platforms and diverse browsers with parallelism.
+# Concurrent Selenium TestNG (COSENG)
+Concurrent Selenium TestNG (COSENG) is a Java implementation supporting concurrent (parallel) TestNG and Selenium UI testing. COSENG supports Selenium GRID, local execution on Linux and Win10 and browsers Google Chrome, Mozilla Firefox, Windows Edge and Internet Explorer.
 
 View the COSENG wiki for documentation and details! https://github.com/siostechcorp/coseng/wiki
+

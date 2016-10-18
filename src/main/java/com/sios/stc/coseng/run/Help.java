@@ -32,7 +32,8 @@ import com.sios.stc.coseng.run.Locations.Location;
  * @since 2.0
  * @version.coseng
  */
-class HelpParameter {
+class Help {
+
     private static final String SPACER = "    ";
 
     /**
@@ -40,17 +41,16 @@ class HelpParameter {
      * notes.
      *
      * @return the node parameter help and example
-     * @see {@link Node}
+     * @see com.sios.stc.coseng.run.Node
      * @since 2.0
      * @version.coseng
      */
     protected static String getNode() {
         Node node = new Node();
         List<String> p = new ArrayList<String>();
-        p.add("Supported Node JSON HelpParameter & Example");
+        p.add("Supported Node JSON Options & Example");
         p.add(space(1, "reportsDirectory: (optional) String"));
-        p.add(space(2, "Default [" + (node.getReportsDirectory().getName().isEmpty()
-                ? "current working directory" : node.getReportsDirectory()) + "]"));
+        p.add(space(2, "Default [" + node.getReportsDirectory() + "]"));
         p.add(space(1, "resourcesTempDirectory: (optional) String"));
         p.add(space(2, "Default [" + node.getResourcesTempDirectory() + "]"));
         p.add(space(2, "Note: platform dependent"));
@@ -91,14 +91,15 @@ class HelpParameter {
      * supported values, notes and Tests JSON example.
      *
      * @return the test parameter help and example
-     * @see Test, Tests
+     * @see com.sios.stc.coseng.run.Tests
+     * @see com.sios.stc.coseng.run.Test
      * @since 2.0
      * @version.coseng
      */
     protected static String getTest() {
         Test test = new Test();
         List<String> p = new ArrayList<String>();
-        p.add("Supported Test JSON HelpParameter & Example");
+        p.add("Supported Test JSON Options & Example");
         p.add(space(1, "name: (required) String"));
         p.add(space(2, "Default [" + test.getName() + "]"));
         p.add(space(2, "Note: names must be unique"));
@@ -151,6 +152,9 @@ class HelpParameter {
         p.add(space(1, "webDriverWaitTimeoutSeconds: (optional) Integer"));
         p.add(space(2, "Default [" + test.getWebDriverWaitTimeoutSeconds() + "]"));
         p.add(space(1, ""));
+        test.setName("testHelp");
+        List<String> suites = test.getSuites();
+        suites.add("TestNG_suite.xml");
         Tests tests = new Tests();
         tests.add(test);
         p.add(getJson(tests));
@@ -178,7 +182,9 @@ class HelpParameter {
      * @param parameter
      *            the parameter object
      * @return the pretty print json
-     * @see {@link Node}, {@link Test}, {@link Tests}
+     * @see com.sios.stc.coseng.run.Node
+     * @see com.sios.stc.coseng.run.Tests
+     * @see com.sios.stc.coseng.run.Test
      * @since 2.0
      * @version.coseng
      */
@@ -187,4 +193,5 @@ class HelpParameter {
                 .create();
         return gson.toJson(parameter);
     }
+
 }

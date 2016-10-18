@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="ParallelClasses" preserve-order="true" parallel="classes">
+  <test name="TestAsk_DuckDuckGo">
+    <classes>
+      <class name="com.sios.stc.coseng.tests.demo.Ask">
+        <methods>
+          <include name="connect2" />
+        </methods>
+      </class>
+      <class name="com.sios.stc.coseng.tests.demo.DuckDuckGo">
+        <methods>
+          <include name="connect2" />
+        </methods>
+      </class>
+    </classes>
+  </test>
+</suite>

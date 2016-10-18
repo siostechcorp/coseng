@@ -17,19 +17,13 @@
 package com.sios.stc.coseng.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.InputStream;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.AndFileFilter;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.NameFileFilter;
-import org.apache.commons.io.filefilter.NotFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import com.sios.stc.coseng.run.CosengException;
 
@@ -41,102 +35,105 @@ import com.sios.stc.coseng.run.CosengException;
  * @version.coseng
  */
 public class Resource {
-    private static final String             PATH_SEPARATOR       = "/";
-    private static final String             RESOURCE_FILTER_NAME = "com";
-    private static final String             RESOURCES_ROOT       = getResource("");
-    private static final Collection<String> resourceDirectories  = getResourceDirectories();
 
     /**
-     * Gets the requested resource by name.
+     * Gets the name of the resource.
      *
      * @param resource
      *            the resource
-     * @return the file
+     * @return the name
      * @throws CosengException
      *             the coseng exception
      * @since 2.0
      * @version.coseng
      */
-    public static File get(String resource) throws CosengException {
-        return get(new File(resource));
-    }
-
-    /**
-     * Gets the requested resource by file.
-     *
-     * @param resource
-     *            the resource
-     * @return the file
-     * @throws CosengException
-     *             the coseng exception
-     * @since 2.0
-     * @version.coseng
-     */
-    public static File get(File resource) throws CosengException {
-        String exceptionMessage = "Resource [" + (resource == null ? null : resource.getName())
-                + "] absent or unreadable";
-        try {
-            // check filesystem
-            if (resource.exists() && resource.canRead()) {
-                return resource;
+    public static String getName(String resource) throws CosengException {
+        if (resource != null && !resource.isEmpty()) {
+            String name = FilenameUtils.getName(resource);
+            if (name != null && !name.isEmpty()) {
+                return name;
             }
-            // failing find on filesystem; scan top down of class resources
-            String resourceName = resource.getName();
-            for (String resourceDirectory : resourceDirectories) {
-                String foundResource =
-                        getResource(resourceDirectory + PATH_SEPARATOR + resourceName);
-                if (foundResource != null) {
-                    return new File(foundResource);
-                }
-            }
-            throw new CosengException(exceptionMessage);
-        } catch (NullPointerException e) {
-            throw new CosengException(exceptionMessage, e);
+            throw new CosengException("Can't get name for the resource [" + resource + "]");
         }
+        throw new CosengException("Can't get name for null or empty resource");
     }
 
     /**
-     * Gets the resource from the classpath.
+     * Creates the resource.
+     *
+     * @param input
+     *            the input
+     * @param resource
+     *            the resource
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.0
+     * @version.coseng
+     */
+    public static void create(InputStream input, File resource) throws CosengException {
+        String message = "Unable to create resource ["
+                + (resource == null ? null : resource.getPath()) + "]";
+        if (resource != null && !resource.isDirectory() && input != null) {
+            try {
+                FileUtils.copyInputStreamToFile(input, resource);
+                return;
+            } catch (IOException e) {
+                throw new CosengException(message, e);
+            }
+        }
+        throw new CosengException(message);
+    }
+
+    /**
+     * Gets the resource from filesystem or the class loader.
+     *
+     * @param resource
+     *            the resource
+     * @return the input stream
+     * @throws CosengException
+     *             the coseng exception
+     * @see com.sios.stc.coseng.util.Resource#getResource(String)
+     * @since 2.0
+     * @version.coseng
+     */
+    public static InputStream get(String resource) throws CosengException {
+        if (resource != null && !resource.isEmpty()) {
+            InputStream input = null;
+            // check filesystem
+            File file = new File(resource);
+            if (file != null && file.exists() && file.canRead()) {
+                try {
+                    input = new FileInputStream(file);
+                } catch (FileNotFoundException e) {
+                    // OK; skip if not found and try class
+                }
+            } else {
+                input = getResource(resource);
+            }
+            if (input != null) {
+                return input;
+            }
+        }
+        throw new CosengException(
+                "Resource [" + (resource == null ? null : resource) + "] absent or unreadable");
+    }
+
+    /**
+     * Gets the resource from the class loader.
      *
      * @param resource
      *            the resource
      * @return the resource
+     * @see com.sios.stc.coseng.util.Resource#get(String)
      * @since 2.0
      * @version.coseng
      */
-    private static String getResource(String resource) {
-        URL resourceUrl = Resource.class.getClassLoader().getResource(resource);
-        if (resourceUrl != null) {
-            return resourceUrl.getPath();
+    private static InputStream getResource(String resource) {
+        InputStream input = Resource.class.getClassLoader().getResourceAsStream(resource);
+        if (input != null) {
+            return input;
         }
         return null;
     }
 
-    /**
-     * Gets the resource directories within the classpath. Best effort. Paths
-     * are relative to the classpath. Excludes {@value #RESOURCE_FILTER_NAME}
-     * directory.
-     *
-     * @return the resource directories
-     * @since 2.0
-     * @version.coseng
-     */
-    private static Collection<String> getResourceDirectories() {
-        Collection<String> relativeResourceDirectories = new ArrayList<String>();
-        IOFileFilter filterDir = new NameFileFilter(RESOURCE_FILTER_NAME);
-        Collection<File> resourceDirectories = FileUtils.listFilesAndDirs(new File(RESOURCES_ROOT),
-                new NotFileFilter(TrueFileFilter.INSTANCE),
-                new AndFileFilter(DirectoryFileFilter.DIRECTORY, new NotFileFilter(filterDir)));
-        try {
-            /* Remove canonical root; making relative to class loader */
-            for (File dir : resourceDirectories) {
-                String relativePath =
-                        StringUtils.removeStart(dir.getCanonicalPath(), RESOURCES_ROOT);
-                relativeResourceDirectories.add(relativePath);
-            }
-        } catch (IOException | NullPointerException e) {
-            // OK; skip on exception
-        }
-        return relativeResourceDirectories;
-    }
 }

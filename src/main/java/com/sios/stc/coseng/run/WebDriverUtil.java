@@ -18,6 +18,7 @@ package com.sios.stc.coseng.run;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -35,19 +36,24 @@ import org.openqa.selenium.remote.LocalFileDetector;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.testng.Assert;
 
+import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
 import com.sios.stc.coseng.run.Matcher.MatchBy;
 import com.sios.stc.coseng.util.Resource;
 
 /**
- * The Class WebDriverUtil.
+ * The Class WebDriverUtil is a collection of convenience methods to perform
+ * common and repetitive web driver actions. Actions include such methods as
+ * accepting invalid ssl certificates, taking screenshots, uploading files,
+ * searching for web elements and pausing a thread.
  *
  * @since 2.0
  * @version.coseng
  */
 public class WebDriverUtil {
-    private static final Logger log = LogManager.getLogger(Coseng.class.getName());
+
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
     private Test                test;
     private WebDriver           webDriver;
 
@@ -56,6 +62,7 @@ public class WebDriverUtil {
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.WebDriverUtil#WebDriverUtil(Test, WebDriver)
      * @since 2.0
      * @version.coseng
      */
@@ -140,7 +147,6 @@ public class WebDriverUtil {
             Assert.assertTrue(matched, "Expected current URL [" + currentUrl + "] to "
                     + matchBy.toString().toLowerCase() + " [" + route + "]");
         }
-
         return matched;
     }
 
@@ -155,14 +161,12 @@ public class WebDriverUtil {
          * To accept self-signed or other SSL Certificates Should try with
          * browser profile; this as last resort.
          */
-
         /*
          * 2016-09-01 Doesn't work with FF 48. Can't do gimick as with IE since
          * geckodriver will bomb before getting chance to 'drive' thru manually
          * accepting the invalid certs. (Awaiting upstream geckodriver fix).
          * Till then import cert into profile or add to browser.
          */
-
         Browser browser = test.getBrowser();
         if (Browser.IE.equals(browser)) {
             boolean title = webDriver.getTitle().equals("Certificate Error: Navigation Blocked");
@@ -188,6 +192,7 @@ public class WebDriverUtil {
     /**
      * Save screenshot.
      *
+     * @see com.sios.stc.coseng.run.WebDriverUtil#saveScreenshot(String)
      * @since 2.0
      * @version.coseng
      */
@@ -228,6 +233,8 @@ public class WebDriverUtil {
      * @param fileName
      *            the file name must not be null or empty
      * @return true, if successful
+     * @see com.sios.stc.coseng.util.Resource#get(String)
+     * @see com.sios.stc.coseng.util.Resource#create(InputStream, File)
      * @since 2.0
      * @version.coseng
      */
@@ -235,14 +242,17 @@ public class WebDriverUtil {
         if (fileName != null && !fileName.isEmpty() && uploadElement != null
                 && uploadElement.isDisplayed() && uploadElement.getAttribute("readonly") == null) {
             try {
-                File filePath = Resource.get(fileName);
+                InputStream fileInput = Resource.get(fileName);
                 Location location = test.getLocation();
+                File resourceDir = test.getResourceDirectory();
+                File resource = new File(resourceDir + File.separator + fileName);
+                Resource.create(fileInput, resource);
                 if (Location.GRID.equals(location)) {
                     RemoteWebDriver wd = (RemoteWebDriver) webDriver;
                     wd.setFileDetector(new LocalFileDetector());
-                    uploadElement.sendKeys(filePath.getCanonicalPath());
+                    uploadElement.sendKeys(resource.getCanonicalPath());
                 } else {
-                    uploadElement.sendKeys(filePath.getCanonicalPath());
+                    uploadElement.sendKeys(resource.getCanonicalPath());
                 }
                 return true;
             } catch (CosengException | IOException e) {
@@ -259,6 +269,7 @@ public class WebDriverUtil {
     /**
      * Pause.
      *
+     * @see com.sios.stc.coseng.run.WebDriverUtil#pause(Long)
      * @since 2.0
      * @version.coseng
      */
@@ -288,4 +299,5 @@ public class WebDriverUtil {
             log.warn("Sleep thread [" + millis.toString() + "] milliseconds interrupted", e);
         }
     }
+
 }

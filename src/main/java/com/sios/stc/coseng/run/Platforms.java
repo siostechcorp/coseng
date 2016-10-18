@@ -33,13 +33,15 @@ import com.sios.stc.coseng.run.Locations.Location;
  * @version.coseng
  */
 class Platforms {
+
     private static final Set<Platform>               platforms        = setSupported();
     private static final Map<Platform, Set<Browser>> platformBrowsers = setSupportedBrowsers();
 
     /**
      * Sets the supported subset of Selenium Platform
      *
-     * @return the sets the
+     * @return the platforms
+     * @see org.openqa.selenium.Platform
      * @since 2.0
      * @version.coseng
      */
@@ -55,6 +57,8 @@ class Platforms {
      * Sets the supported browsers.
      *
      * @return the map
+     * @see org.openqa.selenium.Platform
+     * @see com.sios.stc.coseng.run.Browsers.Browser
      * @since 2.0
      * @version.coseng
      */
@@ -82,15 +86,15 @@ class Platforms {
     }
 
     /**
-     * Checks if is supported.
+     * Checks if platform is supported.
      *
      * @param platform
      *            the platform
-     * @return true, if is supported
+     * @return true, if platform supported
+     * @see org.openqa.selenium.Platform
      * @since 2.0
      * @version.coseng
      */
-
     protected static boolean isSupported(Platform platform) {
         if (platforms.contains(platform)) {
             return true;
@@ -98,6 +102,19 @@ class Platforms {
         return false;
     }
 
+    /**
+     * Checks if is supported based on execution location and platform.
+     *
+     * @param location
+     *            the location
+     * @param platform
+     *            the platform
+     * @return true, if is supported
+     * @see org.openqa.selenium.Platform
+     * @see com.sios.stc.coseng.run.Platforms#isSupported(Platform)
+     * @since 2.0
+     * @version.coseng
+     */
     protected static boolean isSupported(Location location, Platform platform) {
         if (Location.GRID.equals(location) && isSupported(platform)) {
             return true;
@@ -110,7 +127,7 @@ class Platforms {
     }
 
     /**
-     * Gets the supported.
+     * Gets the supported platform.
      *
      * @return the supported
      * @since 2.0
@@ -120,6 +137,17 @@ class Platforms {
         return platforms;
     }
 
+    /**
+     * Gets the supported platform for a given location.
+     *
+     * @param location
+     *            the location
+     * @return the supported platform
+     * @see org.openqa.selenium.Platform
+     * @see com.sios.stc.coseng.run.Location
+     * @since 2.0
+     * @version.coseng
+     */
     protected static Set<Platform> getSupported(Location location) {
         Set<Platform> platforms = new HashSet<Platform>();
         if (Location.GRID.equals(location)) {
@@ -136,11 +164,17 @@ class Platforms {
     /**
      * Checks if is supported browser.
      *
+     * @param location
+     *            the location
      * @param platform
      *            the platform
      * @param browser
      *            the browser
      * @return true, if is supported browser
+     * @see com.sios.stc.coseng.run.Location
+     * @see org.openqa.selenium.Platform
+     * @see com.sios.stc.coseng.run.Platforms#isSupported(Location, Platform)
+     * @see com.sios.stc.coseng.run.Browsers
      * @since 2.0
      * @version.coseng
      */
@@ -158,9 +192,14 @@ class Platforms {
     /**
      * Gets the supported browsers.
      *
+     * @param location
+     *            the location
      * @param platform
      *            the platform
      * @return the supported browsers
+     * @see com.sios.stc.coseng.run.Location
+     * @see org.openqa.selenium.Platform
+     * @see com.sios.stc.coseng.run.Platforms#isSupported(Location, Platform)
      * @since 2.0
      * @version.coseng
      */
@@ -172,4 +211,5 @@ class Platforms {
         }
         return new HashSet<Browser>();
     }
+
 }

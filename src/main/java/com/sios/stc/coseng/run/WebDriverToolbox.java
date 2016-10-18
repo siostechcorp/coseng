@@ -35,11 +35,12 @@ import com.paulhammant.ngwebdriver.NgWebDriver;
  * JavascriptExecutor and NgWebDriver. It also creates the convenience
  * WebDriverUtil and empty WebElements.
  *
- * @see WebDriverUtil, WebElement, WebElements
  * @since 2.0
  * @version.coseng
  */
 class WebDriverToolbox {
+
+    private Test               test;
     private WebDriver          webDriver;
     private Object             webDriverService;
     private WebDriverWait      webDriverWait;
@@ -60,7 +61,9 @@ class WebDriverToolbox {
      *            the web driver service; may be null if location {@code GRID}
      * @throws CosengException
      *             the coseng exception
-     * @see WebDriverUtil, WebElement, WebElements
+     * @see com.sios.stc.coseng.run.WebDriverUtil
+     * @see com.sios.stc.coseng.run.WebElement
+     * @see com.sios.stc.coseng.run.WebElements
      * @since 2.0
      * @version.coseng
      */
@@ -74,7 +77,6 @@ class WebDriverToolbox {
             actions = new Actions(webDriver);
             jsExecutor = (JavascriptExecutor) webDriver;
             ngWebDriver = new NgWebDriver(jsExecutor);
-            // webDriverUtil = new WebDriverUtil();
         } else {
             throw new CosengException("Error creating WebDriverToolbox");
         }
@@ -82,6 +84,11 @@ class WebDriverToolbox {
         this.webDriverService = webDriverService;
         this.webDriverUtil = new WebDriverUtil(test, webDriver);
         this.webElements = new WebElements();
+        this.test = test;
+    }
+
+    protected Test getTest() {
+        return test;
     }
 
     /**
@@ -170,7 +177,7 @@ class WebDriverToolbox {
      * @return the web element
      * @throws CosengException
      *             the coseng exception
-     * @see {@link WebElement}
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -184,7 +191,8 @@ class WebDriverToolbox {
      * Gets the web elements.
      *
      * @return the web elements
-     * @see {@link WebElement}, {@link WebElements}
+     * @see com.sios.stc.coseng.run.WebElement
+     * @see com.sios.stc.coseng.run.WebElement.WebElements
      * @since 2.0
      * @version.coseng
      */
@@ -196,7 +204,8 @@ class WebDriverToolbox {
      * Gets the web element list.
      *
      * @return the web element list
-     * @see {@link WebElement}, {@link WebElements}
+     * @see com.sios.stc.coseng.run.WebElement
+     * @see com.sios.stc.coseng.run.WebElement.WebElements
      * @since 2.0
      * @version.coseng
      */

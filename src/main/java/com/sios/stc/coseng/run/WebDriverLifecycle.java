@@ -35,6 +35,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
 
@@ -46,10 +47,11 @@ import com.sios.stc.coseng.run.Locations.Location;
  * @version.coseng
  */
 class WebDriverLifecycle {
+
     private static final int    WEB_DRIVER_SERVICE_IS_RUNNING_TIMEOUT_ATTEMPTS = 10;
     private static final Long   WEB_DRIVER_SERVICE_IS_RUNNING_TIMEOUT_SLEEP    = 500L;
     private static final Logger log                                            =
-            LogManager.getLogger(Coseng.class.getName());
+            LogManager.getLogger(RunTests.class.getName());
 
     /**
      * Start web driver. Based on test location, platform and browser select and
@@ -60,11 +62,11 @@ class WebDriverLifecycle {
      * @return the web driver toolbox
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.CosengRunner
      * @since 2.0
      * @version.coseng
      */
     protected static WebDriverToolbox startWebDriver(final Test test) throws CosengException {
-
         /*
          * Creating the WebDriver object starts the backing browser instance at
          * once. There is no delay of the instantiation. Make sure ready for it.
@@ -105,7 +107,6 @@ class WebDriverLifecycle {
                      * (Awaiting upstream geckodriver fix). Till then import
                      * cert into profile or add to browser.
                      */
-
                     profile.setAcceptUntrustedCertificates(true);
                 }
                 if (isIncognito) {
@@ -215,7 +216,6 @@ class WebDriverLifecycle {
                  * dc.setCapability(
                  * InternetExplorerDriver.REQUIRE_WINDOW_FOCUS, true);
                  */
-
                 if (Location.NODE.equals(location)) {
                     InternetExplorerDriverService service =
                             new InternetExplorerDriverService.Builder()
@@ -233,25 +233,27 @@ class WebDriverLifecycle {
             }
             return new WebDriverToolbox(test, webDriver, webDriverService);
         } catch (Exception e) {
-            throw new CosengException("Error starting WebDriver", e);
+            throw new CosengException(
+                    "Error starting web driver; browser/web driver version mismatch?; check for orphaned web driver processes.",
+                    e);
         }
     }
 
     /**
      * Stop web driver.
      *
-     * @param webDriver
-     *            the web driver
-     * @param webDriverService
-     *            the web driver service
+     * @param webDriverToolbox
+     *            the web driver toolbox
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.CosengRunner
      * @since 2.0
      * @version.coseng
      */
-    protected static void stopWebDriver(final WebDriver webDriver, final Object webDriverService)
-            throws CosengException {
+    protected static void stopWebDriver(WebDriverToolbox webDriverToolbox) throws CosengException {
         try {
+            WebDriver webDriver = webDriverToolbox.getWebDriver();
+            Object webDriverService = webDriverToolbox.getWebDriverService();
             webDriver.close();
             webDriver.quit();
             if (webDriverService != null) {
@@ -266,7 +268,7 @@ class WebDriverLifecycle {
                 }
             }
         } catch (Exception e) {
-            throw new CosengException("Error stopping WebDriver");
+            throw new CosengException("Error stopping web driver");
         }
     }
 
@@ -278,6 +280,7 @@ class WebDriverLifecycle {
      * @return true, if successful
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.WebDriverLifecycle#startWebDriver(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -317,4 +320,5 @@ class WebDriverLifecycle {
             throw new CosengException("Error checking webdriver running", e);
         }
     }
+
 }

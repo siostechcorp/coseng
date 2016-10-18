@@ -23,8 +23,10 @@ package com.sios.stc.coseng.run;
  * @version.coseng
  */
 class Message {
+
     /**
-     * Details.
+     * Details. A convenience method to format a message with the test name and
+     * message details.
      *
      * @param name
      *            the name
@@ -41,4 +43,5 @@ class Message {
         }
         return log;
     }
+
 }

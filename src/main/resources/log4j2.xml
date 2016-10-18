@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
   <Appenders>
+    <File name="File" fileName="coseng.log">
+      <PatternLayout pattern="%d{DATE} %highlight{%-5level} %logger{15} [%t]; %msg%n" />
+    </File>
     <Console name="Console" target="SYSTEM_OUT">
-      <!-- <PatternLayout pattern="%d{DATE} %highlight{%-5level} %l [%t]; %msg%n"/> --> <!-- DEBUG PATTERN -->
-      <PatternLayout pattern="%d{DATE} %highlight{%-5level} %logger{15} [%t]; %msg%n"/> <!-- NORMAL PATTERN-->
+      <PatternLayout pattern="%highlight{%-5level}: [%t]; %msg%n" />
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="INFO">
-      <AppenderRef ref="Console"/>
+    <Root level="info">
+      <AppenderRef ref="Console" />
+      <AppenderRef ref="File" />
     </Root>
   </Loggers>
 </Configuration>

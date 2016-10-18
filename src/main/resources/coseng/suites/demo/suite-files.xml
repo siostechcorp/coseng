@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Suite" preserve-order="true">
+  <suite-files>
+    <suite-file path="coseng/suites/demo/tests.xml"></suite-file>
+    <suite-file path="coseng/suites/demo/classes.xml"></suite-file>
+    <suite-file path="coseng/suites/demo/methods.xml"></suite-file>
+  </suite-files>
+</suite>

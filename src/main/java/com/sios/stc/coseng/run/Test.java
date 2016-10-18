@@ -77,26 +77,19 @@ import com.sios.stc.coseng.run.Locations.Location;
  * @version.coseng
  */
 public class Test {
-    /**
-     * The Constant COSENG_XMLSUITE_PARAMETER_TEST_NAME =
-     * {@value #COSENG_XMLSUITE_PARAMETER_TEST_NAME}
-     * 
-     * This parameter and the associated synthetic test name is inserted into
-     * the suite XML file prior to execution. This parameter coordinates the
-     * associated Runner, Class under \@Test and active thread.
-     */
-    protected static final String COSENG_XMLSUITE_PARAMETER_TEST_NAME         = "_coseng_test_name";
-    private static final int      WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT     = 5;
-    private static final int      WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT = 5;
 
-    private static boolean incognitoDefault          = false;
-    private static boolean acceptInvalidCertsDefault = false;
-    private static boolean oneWebDriverDefault       = false;
-    private List<XmlSuite> xmlSuites                 = new ArrayList<XmlSuite>();
-    private String         reportDirectory           = null;
-    private boolean        failed                    = false;
-    private boolean        synthetic                 = false;
-    private File           webDriver                 = null;
+    private static final int WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT     = 5;
+    private static final int WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT = 5;
+    private static boolean   incognitoDefault                            = false;
+    private static boolean   acceptInvalidCertsDefault                   = false;
+    private static boolean   oneWebDriverDefault                         = false;
+    private List<XmlSuite>   xmlSuites                                   =
+            new ArrayList<XmlSuite>();
+    private String           reportDirectory                             = null;
+    private File             resourceDirectory                           = null;
+    private boolean          failed                                      = false;
+    private boolean          synthetic                                   = false;
+    private File             webDriver                                   = null;
 
     @Expose
     private String             name                        = null;
@@ -390,11 +383,13 @@ public class Test {
     }
 
     /**
-     * Gets the report directory. This will be a subdirectory of Node
+     * Gets the report directory. This will be a subdirectory under Node
      * {@code reportsDirectory}.
      *
      * @return the report directory
      * @see com.sios.stc.coseng.run.Node#getReportsDirectory()
+     * @see com.sios.stc.coseng.run.Validate
+     * @see com.sios.stc.coseng.run.Concurrent#run()
      * @since 2.0
      * @version.coseng
      */
@@ -407,12 +402,45 @@ public class Test {
      *
      * @param reportDirectory
      *            the new report directory; may not be null or empty
+     * @see com.sios.stc.coseng.run.Node#getReportsDirectory()
+     * @see com.sios.stc.coseng.run.Validate
+     * @see com.sios.stc.coseng.run.Concurrent#run()
      * @since 2.0
      * @version.coseng
      */
     protected void setReportDirectory(String reportDirectory) {
         if (reportDirectory != null && !reportDirectory.isEmpty()) {
             this.reportDirectory = reportDirectory;
+        }
+    }
+
+    /**
+     * Gets the resource directory. This will be subdirectory under Node
+     * {@code resourcesTempDirectory}.
+     *
+     * @return the report directory
+     * @see com.sios.stc.coseng.run.Node#getResourcesTempDirectory()
+     * @see com.sios.stc.coseng.run.Validate
+     * @since 2.0
+     * @version.coseng
+     */
+    protected File getResourceDirectory() {
+        return resourceDirectory;
+    }
+
+    /**
+     * Sets the resource directory.
+     *
+     * @param resourceDirectory
+     *            the new resource directory; may not be null or not a directory
+     * @see com.sios.stc.coseng.run.Node#getResourcesTempDirectory()
+     * @see com.sios.stc.coseng.run.Validate
+     * @since 2.0
+     * @version.coseng
+     */
+    protected void setResourceDirectory(File resourceDirectory) {
+        if (resourceDirectory != null && resourceDirectory.isDirectory()) {
+            this.resourceDirectory = resourceDirectory;
         }
     }
 
@@ -518,4 +546,5 @@ public class Test {
                 + "], webDriverWaitTimeoutSeconds [" + webDriverWaitTimeoutSeconds
                 + "], reportDirectory [" + reportDirectory + "]";
     }
+
 }

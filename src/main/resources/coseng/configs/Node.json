@@ -1,7 +1,0 @@
-{
-    "chromeDriver": "/usr/local/bin/chromedriver",
-    "geckoDriver": "/usr/local/bin/geckodriver",
-    "reportsDirectory": "/tmp/coseng/reports",
-    "resourcesTempDirectory": "/tmp/coseng/resources",
-    "gridUrl": "http://localhost:1234/wd/hub"
-}

@@ -25,11 +25,11 @@ import com.google.gson.annotations.Expose;
  * The Class Tests provides the deserialized collection of Test from the JSON
  * configuration file.
  *
- * @see com.sios.stc.coseng.run.Test
  * @since 2.0
  * @version.coseng
  */
 class Tests {
+
     @Expose
     private final List<Test> tests = new ArrayList<Test>();
 
@@ -67,7 +67,6 @@ class Tests {
      * Size of the collection of tests.
      *
      * @return the int size
-     * @see com.sios.stc.coseng.run.Test
      * @since 2.0
      * @version.coseng
      */
@@ -113,6 +112,7 @@ class Tests {
      * @param test
      *            the test
      * @return true, if successful
+     * @see com.sios.stc.coseng.run.Test
      * @since 2.0
      * @version.coseng
      */
@@ -126,7 +126,7 @@ class Tests {
      * @param name
      *            the name; may not be null or empty
      * @return the test
-     * @see com.sios.stc.coseng.run.Test
+     * @see com.sios.stc.coseng.run.Test#getName()
      * @since 2.0
      * @version.coseng
      */
@@ -147,7 +147,7 @@ class Tests {
      * Gets the names of each test.
      *
      * @return the collection of test names
-     * @see com.sios.stc.coseng.run.Test
+     * @see com.sios.stc.coseng.run.Test#getName()
      * @since 2.0
      * @version.coseng
      */
@@ -169,7 +169,7 @@ class Tests {
      *
      * @return the collection of report directories
      * @see com.sios.stc.coseng.run.Node
-     * @see com.sios.stc.coseng.run.Test
+     * @see com.sios.stc.coseng.run.Test#getReportDirectory()
      * @since 2.0
      * @version.coseng
      */
@@ -187,7 +187,8 @@ class Tests {
      * Gets the name of each failed test.
      *
      * @return the collection of failed test names
-     * @see com.sios.stc.coseng.run.Test
+     * @see com.sios.stc.coseng.run.Test#getName()
+     * @see com.sios.stc.coseng.run.Test#isFailed()
      * @since 2.0
      * @version.coseng
      */

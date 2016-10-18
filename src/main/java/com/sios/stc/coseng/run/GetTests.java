@@ -16,24 +16,8 @@
  */
 package com.sios.stc.coseng.run;
 
-import java.io.File;
-/*
- * The TestNG reports directory and the temporary resources directory must be
-* writable.
-* 
-* If executing COSENG tests locally, each defined test's platform browser's
-* WebDriver must exist and be executable.
-* 
-* If executing COSENG tests via "grid" the hub's URL must be valid. WebDriver
-* executables are irrelevant when executing a test via "grid".
-* 
-* To override the defaults a valid {@value #COSENG_CONFIGS_NODE} JSON file must
-* exist within the src/main/resources hierarchy and define some or all of the
-* Node fields. Suggest placing the file in
-* src/main/resources/coseng/configs/{@value #COSENG_CONFIGS_NODE}.
-*/
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -52,24 +36,20 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
+import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
-import com.sios.stc.coseng.util.Resource;
 
 /**
  * The Class GetTests for deserializing Node and Tests JSON configuration
  * resources and validating the parameters.
- *
- * @see com.sios.stc.coseng.run.Node
- * @see com.sios.stc.coseng.run.Test
- * @see com.sios.stc.coseng.run.Tests
- * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
  * 
  * @since 2.0
  * @version.coseng
  */
 class GetTests {
-    private static final Logger log   = LogManager.getLogger(Coseng.class.getName());
+
+    private static final Logger log   = LogManager.getLogger(RunTests.class.getName());
     private static Node         node  = null;
     private static Tests        tests = null;
 
@@ -78,13 +58,18 @@ class GetTests {
      * corresponding parameter classes.
      *
      * @param jsonNode
-     *            the node json parameters
+     *            the json node
+     * @param jsonNodeInput
+     *            the json node input stream
      * @param jsonTests
-     *            the tests json parameters
+     *            the json tests
+     * @param jsonTestsInput
+     *            the json tests input stream
      * @return the tests
      * @throws CosengException
-     *             the coseng exception for CosengException, IOException,
+     *             the coseng exception for caught CosengException, IOException,
      *             JsoonIOException and JsonSyntaxException
+     * @see com.sios.stc.coseng.run.CosengTests
      * @see com.sios.stc.coseng.run.Node
      * @see com.sios.stc.coseng.run.Test
      * @see com.sios.stc.coseng.run.Tests
@@ -92,19 +77,19 @@ class GetTests {
      * @since 2.0
      * @version.coseng
      */
-    protected static Tests with(File jsonNode, File jsonTests) throws CosengException {
+    protected static Tests with(String jsonNode, InputStream jsonNodeInput, String jsonTests,
+            InputStream jsonTestsInput) throws CosengException {
         Gson gson;
         Reader jsonReader;
-        // Read the node configuration file first; feeds into
-        // Validate.tests()
-        if (jsonNode != null) {
-            File jsonNodeFile = Resource.get(jsonNode);
+        /*
+         * Read the node configuration file first; feeds into Validate.tests()
+         */
+        if (jsonNodeInput != null) {
             try {
                 gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
-                jsonReader = new FileReader(jsonNodeFile);
+                jsonReader = new InputStreamReader(jsonNodeInput);
                 node = gson.fromJson(jsonReader, Node.class);
-            } catch (IOException | JsonIOException | JsonSyntaxException
-                    | IllegalArgumentException e) {
+            } catch (JsonIOException | JsonSyntaxException | IllegalArgumentException e) {
                 throw new CosengException("Exception reading Node JSON [" + jsonNode + "]", e);
             }
         } else {
@@ -112,12 +97,8 @@ class GetTests {
             log.warn("Node JSON not provided; using defaults");
             node = new Node();
         }
-
-        // Read the tests configuration file after getting node
-        // configuration
+        /* Read the tests configuration file after getting node configuration */
         try {
-            File jsonTestsFile;
-            jsonTestsFile = Resource.get(jsonTests);
             // Deserialize any case of Platform
             JsonDeserializer<Platform> platformTypeDeserializer = new JsonDeserializer<Platform>() {
                 public Platform deserialize(JsonElement json, Type typeOfT,
@@ -139,18 +120,17 @@ class GetTests {
                     return Location.valueOf(json.getAsString().toUpperCase());
                 }
             };
-
-            // Read the COSENG Tests JSON configuration file
+            /* Read the COSENG Tests JSON configuration file */
             gson = new GsonBuilder().registerTypeAdapter(Platform.class, platformTypeDeserializer)
                     .registerTypeAdapter(Browser.class, browserTypeDeserializer)
                     .registerTypeAdapter(Location.class, locationTypeDeserializer)
                     .excludeFieldsWithoutExposeAnnotation().create();
-            jsonReader = new FileReader(jsonTestsFile);
+            jsonReader = new InputStreamReader(jsonTestsInput);
             tests = gson.fromJson(jsonReader, Tests.class);
-            // validate the tests
+            /* Validate the tests */
             Validate.tests(node, tests);
-        } catch (CosengException | IOException | JsonIOException | JsonSyntaxException
-                | IllegalArgumentException e) {
+        } catch (CosengException | JsonIOException | JsonSyntaxException | IllegalArgumentException
+                | NullPointerException e) {
             throw new CosengException("Exception reading Tests JSON [" + jsonTests + "]", e);
         }
         return tests;
@@ -175,4 +155,5 @@ class GetTests {
         }
         return StringUtils.join(configs, System.lineSeparator());
     }
+
 }

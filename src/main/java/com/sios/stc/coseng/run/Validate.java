@@ -19,13 +19,12 @@ package com.sios.stc.coseng.run;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
@@ -43,24 +42,26 @@ import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 
 import com.rits.cloning.Cloner;
+import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
 import com.sios.stc.coseng.util.Resource;
 
 /**
- * The Class Validate.
+ * The Class Validate. Validates the logical combination test parameters.
  *
  * @since 2.0
  * @version.coseng
  */
 class Validate {
 
-    private static final Logger log = LogManager.getLogger(Coseng.class.getName());
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
     private static Node         node;
     private static Tests        tests;
 
     /**
-     * Tests.
+     * Tests. Validates the node and test parameters for logical combinations
+     * based on location, platform, browser and other details.
      *
      * @param node
      *            the node
@@ -68,6 +69,14 @@ class Validate {
      *            the tests
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Node
+     * @see com.sios.stc.coseng.run.Tests
+     * @see com.sios.stc.coseng.run.Test
+     * @see com.sios.stc.coseng.run.Validate#notNull()
+     * @see com.sios.stc.coseng.run.Validate#uniqueName()
+     * @see com.sios.stc.coseng.run.Validate#createExplicitTests()
+     * @see com.sios.stc.coseng.run.Validate#node()
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -94,10 +103,11 @@ class Validate {
     }
 
     /**
-     * Not null.
+     * Not null; that there are no null test.
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -110,10 +120,11 @@ class Validate {
     }
 
     /**
-     * Unique name.
+     * Unique name; that all test have unique names.
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -134,10 +145,15 @@ class Validate {
     }
 
     /**
-     * Creates the explicit tests.
+     * Creates the explicit tests. Some tests will be identified as ANY/ALL.
+     * This implies multiple COSENG tests against all supported platform and
+     * browsers. Create explicit combinations for supported platform and
+     * browsers.
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see com.sios.stc.coseng.run.Validate#newTests(Test, Platform)
      * @since 2.0
      * @version.coseng
      */
@@ -168,7 +184,7 @@ class Validate {
     }
 
     /**
-     * New tests.
+     * New tests based on the original and the supported platform.
      *
      * @param original
      *            the original
@@ -177,6 +193,8 @@ class Validate {
      * @return the list
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#createExplicitTests()
+     * @see com.sios.stc.coseng.run.Validate#newTest(Test, Platform, Browser)
      * @since 2.0
      * @version.coseng
      */
@@ -206,7 +224,7 @@ class Validate {
     }
 
     /**
-     * New test.
+     * New test based on the original, platform and supported browser.
      *
      * @param original
      *            the original
@@ -217,6 +235,8 @@ class Validate {
      * @return the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#newTests(Test, Platform)
+     * @see com.sios.stc.coseng.run.Validate#cloneTest(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -233,13 +253,14 @@ class Validate {
     }
 
     /**
-     * Clone test.
+     * Clone test. Deep clone the original for making test combinations.
      *
      * @param original
      *            the original
      * @return the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#newTest(Test, Platform, Browser)
      * @since 2.0
      * @version.coseng
      */
@@ -255,10 +276,12 @@ class Validate {
     }
 
     /**
-     * Node.
+     * Node. Validates the reports and resources directories.
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see com.sios.stc.coseng.run.Validate#directory(File)
      * @since 2.0
      * @version.coseng
      */
@@ -275,12 +298,15 @@ class Validate {
     }
 
     /**
-     * Directory.
+     * Directory. Create directory if absent; validate that resource is a
+     * directory.
      *
      * @param directory
      *            the directory
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#node()
+     * @see com.sios.stc.coseng.run.Validate#resourceDirectory(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -302,10 +328,22 @@ class Validate {
     }
 
     /**
-     * Tests.
+     * Tests. Validate each test's parameters.
      *
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#platform(Test)
+     * @see com.sios.stc.coseng.run.Validate#browser(Test)
+     * @see com.sios.stc.coseng.run.Validate#webDriver(Test)
+     * @see com.sios.stc.coseng.run.Validate#reportDirectory(Test)
+     * @see com.sios.stc.coseng.run.Validate#resourceDirectory(Test)
+     * @see com.sios.stc.coseng.run.Validate#suites(Test)
+     * @see com.sios.stc.coseng.run.Validate#gridUrl(Test)
+     * @see com.sios.stc.coseng.run.Validate#verbosity(Test)
+     * @see com.sios.stc.coseng.run.Validate#webDriverTimeout(Test)
+     * @see com.sios.stc.coseng.run.Validate#webDriverWaitTimeout(Test)
+     * @see com.sios.stc.coseng.run.Validate#warnBaseUrlUndefined(Test)
+     * @see com.sios.stc.coseng.run.Validate#warnBrowserVersionForNode(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -315,6 +353,7 @@ class Validate {
             browser(test);
             webDriver(test);
             reportDirectory(test);
+            resourceDirectory(test);
             suites(test);
             gridUrl(test);
             verbosity(test);
@@ -332,6 +371,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -366,6 +406,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -392,6 +433,8 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
+     * @see com.sios.stc.coseng.run.Validate#isExecutable(File)
      * @since 2.0
      * @version.coseng
      */
@@ -436,6 +479,7 @@ class Validate {
      * @param file
      *            the file
      * @return the boolean
+     * @see com.sios.stc.coseng.run.Validate#webDriver(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -451,6 +495,7 @@ class Validate {
      *
      * @param test
      *            the test
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -461,15 +506,34 @@ class Validate {
     }
 
     /**
-     * Suites. Iterate over the collection of TestNG Suit XML. During validation
-     * insert a custom xml parameter
-     * {@value Test#COSENG_XMLSUITE_PARAMETER_TEST_NAME} to cross-reference the
-     * test by name.
+     * Resource directory.
+     *
+     * @param test
+     *            the test
+     * @throws CosengException
+     * @see com.sios.stc.coseng.run.Validate#tests()
+     * @since 2.0
+     * @version.coseng
+     */
+    private static void resourceDirectory(Test test) throws CosengException {
+        File nodeResourceDirectory = node.getResourcesTempDirectory();
+        String name = test.getName();
+        File testResourceDirectory = new File(nodeResourceDirectory + File.separator + name);
+        directory(testResourceDirectory);
+        test.setResourceDirectory(testResourceDirectory);
+    }
+
+    /**
+     * Suites. Modify for uniqueness and validity. Create TestNG XmlSuite list
+     * and attach to the COSENG test.
      *
      * @param test
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
+     * @see com.sios.stc.coseng.run.Validate#modifySuiteXml(String, File, List,
+     *      boolean)
      * @since 2.0
      * @version.coseng
      */
@@ -481,108 +545,159 @@ class Validate {
                     Message.details(name, "no suites provided; at least one suite XML REQUIRED"));
         } else {
             List<XmlSuite> xmlSuites = new ArrayList<XmlSuite>();
-            List<String> tempSuites = new ArrayList<String>();
-            Map<String, String> suiteXmlParameter = new HashMap<String, String>();
             XmlSuite xmlSuite = new XmlSuite();
-            String attrName = "name";
-            String attrParallel = "parallel";
-            String attrTest = "test";
-            String nameSuiteSeparator = "_";
-
-            suiteXmlParameter.put(Test.COSENG_XMLSUITE_PARAMETER_TEST_NAME, name);
-
-            for (String suite : suites) {
-                File suiteResource = Resource.get(suite);
-                /* Read original suite */
-                SAXBuilder jdomBuilder = new SAXBuilder();
-                Document jdomSuite = null;
-                try {
-                    jdomSuite = jdomBuilder.build(suiteResource);
-                } catch (JDOMException | IOException e) {
-                    throw new CosengException(
-                            Message.details(name, "deserialize suite [" + suite + "] failed"), e);
-                }
-                /*
-                 * Modify some elements to identify the COSENG name. Get 'suite'
-                 * root and change name to be "cosengTestName_suiteName"
-                 */
-                Element suiteRoot = jdomSuite.getRootElement();
-                Attribute suiteName = suiteRoot.getAttribute(attrName);
-                suiteName.setValue(name + nameSuiteSeparator + suiteName.getValue());
-
-                Attribute parallelMode = suiteRoot.getAttribute(attrParallel);
-                if (parallelMode == null) {
-                    throw new CosengException(Message.details(name,
-                            "suite [" + suite + "] has no suite parallel mode"));
-                }
-                if (ParallelMode.INSTANCES.toString().equals(parallelMode.getValue())) {
-                    throw new CosengException(
-                            "Parallel mode [" + ParallelMode.INSTANCES + "] unsupported");
-                }
-                /*
-                 * ALL XML suites must have parallel="false" if using one
-                 * WebDriver
-                 */
-                if (test.isOneWebDriver()) {
-                    if (!ParallelMode.FALSE.toString().equals(parallelMode.getValue())) {
-                        throw new CosengException(Message.details(name,
-                                "suite [" + suite + "] parallel mode must be [" + ParallelMode.FALSE
-                                        + "] when onWebDriver is [" + test.isOneWebDriver() + "]"));
-                    }
-                }
-                /*
-                 * Get the 'test' children and change name to be
-                 * "cosengTestName_TestName"
-                 */
-                for (Element element : suiteRoot.getChildren(attrTest)) {
-                    Attribute suiteTestName = element.getAttribute(attrName);
-                    suiteTestName.setValue(name + nameSuiteSeparator + suiteTestName.getValue());
-                }
-                /*
-                 * Save to temp with unique name; single COSENG JSON config with
-                 * multiple tests could be using the same original suite XML
-                 * file.
-                 */
-                XMLOutputter xout = new XMLOutputter(Format.getPrettyFormat());
-                String suitePath = node.getResourcesTempDirectory() + File.separator + name
-                        + nameSuiteSeparator + suite;
-                try {
-                    // xout.output(jdomSuite, System.out);
-                    OutputStream out = new FileOutputStream(suitePath);
-                    xout.output(jdomSuite, out);
-                    // use temp suite file for populating xmlSuite
-                    tempSuites.add(suitePath);
-                } catch (IOException e) {
-                    throw new CosengException(Message.details(name,
-                            "saving suite resource [" + suite + "] to [" + suitePath + "] failed"));
-                }
-            }
-            xmlSuite.setSuiteFiles(tempSuites);
-            /*
-             * TestNG requires setting some available file name; doesn't even
-             * have to be a related suite xml file, any existing file will do.
-             * So, just pick the first suite file.
-             */
-            xmlSuite.setFileName(tempSuites.get(0));
+            xmlSuite.setSuiteFiles(modifySuiteXml(name, test.getResourceDirectory(), suites,
+                    test.isOneWebDriver()));
             xmlSuite.setName(name);
-            /*
-             * Add the test name for managing the webdriver instances across the
-             * test suite files
-             */
-            xmlSuite.setParameters(suiteXmlParameter);
-            /*
-             * Can't 'read' the suites for suite parameters. Must be caught
-             * during execution.
-             */
             xmlSuites.add(xmlSuite);
-
-            /*
-             * Record the collection temporary and modified suite XML files for
-             * reference by CosengRunner
-             */
             test.setXmlSuites(xmlSuites);
         }
+    }
 
+    /**
+     * Modify suite xml. Convenience method for a single suite. Calls
+     * modifySuiteXml with a list with one element.
+     *
+     * @param name
+     *            the name
+     * @param resourceDirectory
+     *            the resource directory
+     * @param suite
+     *            the suite
+     * @param isOneWebDriver
+     *            the is one web driver
+     * @return the list
+     * @throws CosengException
+     *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#suites(Test)
+     * @see com.sios.stc.coseng.run.Validate#modifySuiteXml(String, File,
+     *      String, boolean)
+     * @since 2.0
+     * @version.coseng
+     */
+    private static List<String> modifySuiteXml(String name, File resourceDirectory, String suite,
+            boolean isOneWebDriver) throws CosengException {
+        List<String> suites = new ArrayList<String>();
+        suites.add(suite);
+        return modifySuiteXml(name, resourceDirectory, suites, isOneWebDriver);
+    }
+
+    /**
+     * Modify suite xml. Deserialize XML and modify some elements to provide
+     * unique report names and separation of tests based on multiple browsers
+     * from the same test suites. Validate that all have parallel="false" if
+     * isOneWebDriver 'true'. Does not support parallel="instances". Supports
+     * suite xml that are composed with suite-files.
+     *
+     * @param name
+     *            the name
+     * @param resourceDirectory
+     *            the resource directory
+     * @param suites
+     *            the suites
+     * @param isOneWebDriver
+     *            the is one web driver
+     * @return the list
+     * @throws CosengException
+     *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#modifySuiteXml(String, File, List,
+     *      boolean)
+     * @since 2.0
+     * @version.coseng
+     */
+    private static List<String> modifySuiteXml(String name, File resourceDirectory,
+            List<String> suites, boolean isOneWebDriver) throws CosengException {
+        List<String> modifiedSuites = new ArrayList<String>();
+        String attrName = "name";
+        String attrParallel = "parallel";
+        String attrTest = "test";
+        String attrSuiteFiles = "suite-files";
+        String attrSuiteFile = "suite-file";
+        String attrPath = "path";
+        String separator = "_";
+        for (String suite : suites) {
+            InputStream suiteInput = Resource.get(suite);
+            /* Read original suite */
+            SAXBuilder jdomBuilder = new SAXBuilder();
+            Document jdomSuite = null;
+            try {
+                jdomSuite = jdomBuilder.build(suiteInput);
+                suiteInput.close();
+            } catch (JDOMException | IOException e) {
+                throw new CosengException(
+                        Message.details(name, "deserialize suite [" + suite + "] failed"), e);
+            }
+            /*
+             * Modify some elements to identify the COSENG name. Get 'suite'
+             * root and change name to be "cosengTestName_suiteName"
+             */
+            Element suiteRoot = jdomSuite.getRootElement();
+            Attribute suiteName = suiteRoot.getAttribute(attrName);
+            suiteName.setValue(name + separator + suiteName.getValue());
+            /* Check that parallel mode is valid */
+            Attribute parallelMode = suiteRoot.getAttribute(attrParallel);
+            if (parallelMode == null) {
+                throw new CosengException(
+                        Message.details(name, "suite [" + suite + "] has no suite parallel mode"));
+            }
+            if (ParallelMode.INSTANCES.toString().equals(parallelMode.getValue())) {
+                throw new CosengException(
+                        "Parallel mode [" + ParallelMode.INSTANCES + "] unsupported");
+            }
+            /*
+             * ALL XML suites must have parallel="false" or be "none" if using
+             * one WebDriver. Known that ParallelMode.FALSE is deprecated; but
+             * code still varies on return value of "false|none" when parameter
+             * absent. TODO: Remove "FALSE" conditional once TestNG fully
+             * deprecates ParallelMode.FALSE in XML DTD.
+             */
+            String parallelModeValue = parallelMode.getValue();
+            if (isOneWebDriver) {
+                final String FALSE = "false";
+                if (!FALSE.equals(parallelModeValue)
+                        && !ParallelMode.NONE.toString().equals(parallelModeValue)) {
+                    throw new CosengException(Message.details(name,
+                            "suite [" + suite + "] parallel mode must be [" + FALSE + "] or ["
+                                    + ParallelMode.NONE + "] when onWebDriver is [" + isOneWebDriver
+                                    + "]"));
+                }
+            }
+            /*
+             * Get the 'test' children and change name to be
+             * "cosengTestName_TestName"
+             */
+            for (Element element : suiteRoot.getChildren(attrTest)) {
+                Attribute suiteTestName = element.getAttribute(attrName);
+                suiteTestName.setValue(name + separator + suiteTestName.getValue());
+            }
+            /* If suite-files modify each suite-file as well */
+            for (Element element : suiteRoot.getChildren(attrSuiteFiles)) {
+                for (Element e : element.getChildren(attrSuiteFile)) {
+                    Attribute suiteFile = e.getAttribute(attrPath);
+                    List<String> modifiedSuiteFiles = modifySuiteXml(name, resourceDirectory,
+                            suiteFile.getValue(), isOneWebDriver);
+                    suiteFile.setValue(modifiedSuiteFiles.get(0));
+                }
+            }
+            /*
+             * Save to temp resource directory; single COSENG JSON config with
+             * multiple tests could be using the same original suite XML file.
+             */
+            XMLOutputter xout = new XMLOutputter(Format.getPrettyFormat());
+            String suitePath = resourceDirectory + File.separator + Resource.getName(suite);
+            try {
+                // xout.output(jdomSuite, System.out);
+                OutputStream out = new FileOutputStream(suitePath);
+                xout.output(jdomSuite, out);
+                out.close();
+                // use temp suite file for populating xmlSuite
+                modifiedSuites.add(suitePath);
+            } catch (IOException e) {
+                throw new CosengException(Message.details(name,
+                        "saving suite resource [" + suite + "] to [" + suitePath + "] failed"));
+            }
+        }
+        return modifiedSuites;
     }
 
     /**
@@ -592,6 +707,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -618,6 +734,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -636,6 +753,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -655,6 +773,7 @@ class Validate {
      *            the test
      * @throws CosengException
      *             the coseng exception
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -672,6 +791,7 @@ class Validate {
      *
      * @param test
      *            the test
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -688,6 +808,7 @@ class Validate {
      *
      * @param test
      *            the test
+     * @see com.sios.stc.coseng.run.Validate#tests()
      * @since 2.0
      * @version.coseng
      */
@@ -701,4 +822,5 @@ class Validate {
                     "browserVersion ignored for test at location [" + location + "]"));
         }
     }
+
 }

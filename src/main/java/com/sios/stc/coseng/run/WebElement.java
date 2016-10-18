@@ -35,13 +35,13 @@ import com.sios.stc.coseng.run.Matcher.MatchBy;
  * @version.coseng
  */
 public class WebElement {
+
     // common DOM attributes and values
     public static final String ATTR_CLASS    = "class";
     public static final String ATTR_DISABLED = "disabled";
     public static final String ATTR_ENABLED  = "enabled";
 
-    private static final String WEB_ELEMENT_TAG_NAME_INPUT = "input";
-
+    private static final String            WEB_ELEMENT_TAG_NAME_INPUT = "input";
     private org.openqa.selenium.WebElement webElement;
     private By                             by;
     private WebDriver                      webDriver;
@@ -78,7 +78,7 @@ public class WebElement {
     }
 
     /**
-     * Gets the.
+     * Gets the web element.
      *
      * @return the org.openqa.selenium. web element
      * @since 2.0
@@ -112,7 +112,7 @@ public class WebElement {
     }
 
     /**
-     * Find.
+     * Find web element.
      *
      * @since 2.0
      * @version.coseng
@@ -124,7 +124,7 @@ public class WebElement {
     }
 
     /**
-     * Click.
+     * Click web element.
      *
      * @since 2.0
      * @version.coseng
@@ -136,7 +136,7 @@ public class WebElement {
     }
 
     /**
-     * Clear.
+     * Clear web element.
      *
      * @since 2.0
      * @version.coseng
@@ -347,4 +347,5 @@ public class WebElement {
         }
         return matched;
     }
+
 }

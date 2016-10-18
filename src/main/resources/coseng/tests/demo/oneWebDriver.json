@@ -4,9 +4,9 @@
             "name": "demo",
             "location": "node",
             "browser": "all",
-            "oneWebDriver": false,
+            "oneWebDriver": true,
             "suites": [
-                "Demo.xml"
+                "coseng/suites/demo/oneWebDriver.xml"
             ]
         }
     ]

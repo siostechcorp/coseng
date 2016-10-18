@@ -26,6 +26,7 @@ import java.util.List;
  * @version.coseng
  */
 class Browsers {
+
     /**
      * The Enum Browser.
      *
@@ -39,6 +40,13 @@ class Browsers {
     protected static final String BROWSER_VERSION_DEFAULT        = "ANY";
     protected static final String BROWSER_NAME_INTERNET_EXPLORER = "internet explorer";
 
+    /**
+     * Gets the list of browser values.
+     *
+     * @return the list
+     * @since 2.0
+     * @version.coseng
+     */
     protected static List<String> get() {
         List<String> browsers = new ArrayList<String>();
         for (Browser browser : Browser.values()) {
@@ -46,4 +54,5 @@ class Browsers {
         }
         return browsers;
     }
+
 }

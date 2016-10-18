@@ -29,6 +29,7 @@ import org.openqa.selenium.Platform;
  * @version.coseng
  */
 class OperatingSystem {
+
     /**
      * The Enum SupportedOs.
      *
@@ -49,7 +50,7 @@ class OperatingSystem {
             System.getProperty("os.version").toLowerCase(Locale.ENGLISH);
 
     /**
-     * Gets the platform.
+     * Gets the Selenium platform for the operating system.
      *
      * @return the platform
      * @since 2.0
@@ -68,9 +69,9 @@ class OperatingSystem {
     }
 
     /**
-     * Checks if is supported.
+     * Checks if operating system is supported.
      *
-     * @return true, if is supported
+     * @return true, if operating system is supported
      * @since 2.0
      * @version.coseng
      */
@@ -87,9 +88,9 @@ class OperatingSystem {
     }
 
     /**
-     * Gets the supported.
+     * Gets the supported operating system.
      *
-     * @return the supported
+     * @return the supported operating system
      * @since 2.0
      * @version.coseng
      */

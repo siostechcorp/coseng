@@ -29,11 +29,13 @@ import org.openqa.selenium.NoSuchElementException;
  * @version.coseng
  */
 public class WebElements {
+
     private List<WebElement> webElements = new ArrayList<WebElement>();
 
     /**
      * Instantiates a new web elements.
      *
+     * @see com.sios.stc.coseng.run.WebElements#WebElements(List)
      * @since 2.0
      * @version.coseng
      */
@@ -46,6 +48,7 @@ public class WebElements {
      *
      * @param webElements
      *            the web elements; may not be null
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -61,6 +64,7 @@ public class WebElements {
      *
      * @param webElement
      *            the web element; may not be null
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -80,6 +84,7 @@ public class WebElements {
      *
      * @param webElements
      *            the web elements; may not be null
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -95,6 +100,7 @@ public class WebElements {
      * Gets the collection of web elements.
      *
      * @return the list
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -107,6 +113,7 @@ public class WebElements {
      *
      * @throws NoSuchElementException
      *             the no such element exception
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -121,6 +128,7 @@ public class WebElements {
     /**
      * Clear all the web element.
      *
+     * @see com.sios.stc.coseng.run.WebElement
      * @since 2.0
      * @version.coseng
      */
@@ -143,4 +151,5 @@ public class WebElements {
     public void removeAll() {
         webElements = new ArrayList<WebElement>();
     }
+
 }

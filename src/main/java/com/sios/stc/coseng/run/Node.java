@@ -48,7 +48,7 @@ import com.sios.stc.coseng.run.Browsers.Browser;
  * JSON fields and default value:
  * <dl>
  * <dt>Linux</dt>
- * <dd>reportsDirectory: "" (the current working directory)</dd>
+ * <dd>reportsDirectory: "coseng-reports" (in current working directory)</dd>
  * <dd>resourcesTempDirectory: /tmp/coseng</dd>
  * <dd>gridUrl: http://localhost:4444/wd/hub</dd>
  * <dd>chromeDriver: /usr/bin/chromedriver</dd>
@@ -57,25 +57,29 @@ import com.sios.stc.coseng.run.Browsers.Browser;
  * <dd>reportsDirectory: "" (the current working directory)</dd>
  * <dd>resourcesTempDirectory: %USERPROFILE%\AppData\Local\Temp</dd>
  * <dd>gridUrl: http://localhost:4444/wd/hub</dd>
- * <dd>chromeDriver: C:\\selenium\\</dd>
- * <dd>geckoDriver: C:\\selenium\\</dd>
- * <dd>edgeDriver: C:\\selenium\\</dd>
- * <dd>ieDriver: C:\\selenium\\</dd>
+ * <dd>chromeDriver: C:\\selenium\\chromedriver.exe</dd>
+ * <dd>geckoDriver: C:\\selenium\\geckodriver.exe</dd>
+ * <dd>edgeDriver: C:\\selenium\\MicrosoftWebDriver.exe</dd>
+ * <dd>ieDriver: C:\\selenium\\IEDriverServer.exe</dd>
  * </dl>
  *
  * @since 2.0
  * @version.coseng
  */
 class Node {
+
     private static final String DEFAULT_LINUX_CHROME_DRIVER_PATH   = "/usr/bin/chromedriver";
     private static final String DEFAULT_LINUX_GECKO_DRIVER_PATH    = "/usr/bin/geckodriver";
-    private static final String DEFAULT_WINDOWS_CHROME_DRIVER_PATH = "C:\\selenium\\";
-    private static final String DEFAULT_WINDOWS_GECKO_DRIVER_PATH  = "C:\\selenium\\";
-    private static final String DEFAULT_WINDOWS_EDGE_DRIVER_PATH   = "C:\\selenium\\";
-    private static final String DEFAULT_WINDOWS_IE_DRIVER_PATH     = "C:\\selenium\\";
-
-    private String defaultGridUrl          = "http://localhost:4444/wd/hub";
-    private String defaultReportsDirectory = "";
+    private static final String DEFAULT_WINDOWS_CHROME_DRIVER_PATH =
+            "C:\\selenium\\chromedriver.exe";
+    private static final String DEFAULT_WINDOWS_GECKO_DRIVER_PATH  =
+            "C:\\selenium\\geckodriver.exe";
+    private static final String DEFAULT_WINDOWS_EDGE_DRIVER_PATH   =
+            "C:\\selenium\\MicrosoftWebDriver.exe";
+    private static final String DEFAULT_WINDOWS_IE_DRIVER_PATH     =
+            "C:\\selenium\\IEDriverServer.exe";
+    private String              defaultGridUrl                     = "http://localhost:4444/wd/hub";
+    private String              defaultReportsDirectory            = "coseng-reports";
 
     @Expose
     private final String reportsDirectory       = defaultReportsDirectory;
@@ -162,7 +166,7 @@ class Node {
      * {@code ANY, LINUX, WINDOWS, WIN10}.
      *
      * @return the chrome driver
-     * @see {@link com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -197,7 +201,7 @@ class Node {
      * {@code ANY, WINDOWS, WIN10}.
      *
      * @return the ie driver
-     * @see {@link com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -215,7 +219,7 @@ class Node {
      * {@code ANY, WINDOWS, WIN10}.
      *
      * @return the edge driver
-     * @see {@link com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -232,9 +236,9 @@ class Node {
      *
      * @return the grid url
      * @throws CosengException
-     *             the coseng exception on {@code MalformedURLException}
-     * @see {@link com.sios.stc.coseng.run.Validate#tests(Node, Tests),
-     *      {@link Test#setGridUrl(URL)}
+     *             the coseng exception on caught {@code MalformedURLException}
+     * @see com.sios.stc.coseng.run.Validate#tests(Node, Tests)
+     * @see Test#setGridUrl(URL)
      * @since 2.0
      * @version.coseng
      */
@@ -261,4 +265,5 @@ class Node {
                 + ieDriver + "], geckoDriver [" + geckoDriver + "], edgeDriver [" + edgeDriver
                 + "], gridUrl [" + gridUrl + "]";
     }
+
 }

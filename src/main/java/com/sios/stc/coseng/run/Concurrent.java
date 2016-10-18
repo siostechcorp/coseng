@@ -16,23 +16,29 @@
  */
 package com.sios.stc.coseng.run;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
+import com.sios.stc.coseng.RunTests;
+
 /**
- * The Class Concurrent creates a runnable instance for a given test.
+ * The Class Concurrent creates a runnable instance for a given COSENG test.
  *
- * @see Test
  * @since 2.0
  * @version.coseng
  */
-class Concurrent extends CosengRunner implements Runnable {
-    private static final Logger log = LogManager.getLogger(Coseng.class.getName());
+class Concurrent implements Runnable {
+
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
     private Test                test;
 
     /**
-     * Instantiates a new concurrent runnable for a given test.
+     * Instantiates a new concurrent runnable for a given COSENG test.
      *
      * @param test
      *            the test to run; may not be null
@@ -56,43 +62,31 @@ class Concurrent extends CosengRunner implements Runnable {
      */
     @Override
     public void run() {
+        Thread thread = Thread.currentThread();
         String name = test.getName();
-        log.debug("Test [{}]", name);
-        /* Create the test runner */
-        try {
-            createRunner(test);
-        } catch (CosengException e) {
-            test.setIsFailed(true);
-            log.fatal(Message.details(name, "Unable to create test runner"), e);
-            return;
-        }
-        /* Construct the TestNG instance */
+        /* Seed runner */
+        CosengRunner.setThreadTest(thread, test);
+        log.debug("Test [{}] thread [{}] {}]", name, thread.getId(), thread.getName());
         TestNG testNg = new TestNG();
-        testNg.setXmlSuites(test.getXmlSuites());
-        testNg.setVerbose(test.getVerbosity());
-        testNg.setOutputDirectory(test.getReportDirectory());
-        /* Start web driver if isOneWebDriver */
         try {
-            _beforeOneWebDriver();
-        } catch (CosengException e) {
+            testNg.setXmlSuites(test.getXmlSuites());
+            testNg.setVerbose(test.getVerbosity());
+            testNg.setOutputDirectory(test.getReportDirectory());
+            /* Add the all important CosengListener */
+            List<Class<? extends ITestNGListener>> listeners =
+                    new ArrayList<Class<? extends ITestNGListener>>();
+            listeners.add(com.sios.stc.coseng.run.CosengListener.class);
+            testNg.setListenerClasses(listeners);
+            /* Run the TestNG test */
+            testNg.run();
+            /* Test completed; mark test if failure */
+            if (testNg.hasFailure()) {
+                test.setIsFailed(true);
+            }
+        } catch (Exception e) {
             test.setIsFailed(true);
-            log.fatal(Message.details(name, "Unable to start webdriver"), e);
-            return;
-        }
-        /* Run the TestNG test */
-        testNg.run();
-        /* Test completed; mark test if failure */
-        if (testNg.hasFailure()) {
-            test.setIsFailed(true);
-        }
-        /* Stop web driver if isOnceWebDriver */
-        try {
-            _afterOneWebDriver();
-        } catch (CosengException e) {
-            log.warn(
-                    Message.details(name,
-                            "Unable to stop webdriver; may need to kill orphan webdriver processes"),
-                    e);
+            throw new RuntimeException("Unable to execute TestNG run for test [" + name + "]", e);
         }
     }
+
 }

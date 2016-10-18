@@ -27,6 +27,7 @@ import java.util.List;
  * @version.coseng
  */
 class Locations {
+
     /**
      * The Enum Location.
      *
@@ -37,6 +38,13 @@ class Locations {
         NODE, GRID
     };
 
+    /**
+     * Gets the list of location values.
+     *
+     * @return the list
+     * @since 2.0
+     * @version.coseng
+     */
     protected static List<String> get() {
         List<String> locations = new ArrayList<String>();
         for (Location location : Location.values()) {
@@ -44,4 +52,5 @@ class Locations {
         }
         return locations;
     }
+
 }

@@ -16,7 +16,8 @@
  */
 package com.sios.stc.coseng.run;
 
-import java.io.File;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,34 +32,37 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.util.Resource;
 
 /**
- * The Class Coseng contains the entry method for executing Concurrent Selenium
- * TestNG (COSENG) suites.
+ * The Class CosengTests contains the entry method for executing Concurrent
+ * Selenium TestNG (COSENG) suites.
  *
  * @since 2.0
  * @version.coseng
  */
-public class Coseng {
+public class CosengTests {
+
     private static final int    EXIT_SUCCESS             = 0;
     private static final int    EXIT_FAILURE             = 1;
     private static final int    EXECUTOR_TIMEOUT_MINUTES = 5;
     private static final Logger log                      =
-            LogManager.getLogger(Coseng.class.getName());
-
-    private static File  jsonTestsFile;
-    private static File  jsonNodeFile;
-    private static Tests tests;
+            LogManager.getLogger(RunTests.class.getName());
+    private static String       jsonTests;
+    private static InputStream  jsonTestsInput;
+    private static String       jsonNode;
+    private static InputStream  jsonNodeInput;
+    private static Tests        tests;
 
     /**
-     * Instantiates a new coseng. Marked protected to prevent other classes from
-     * instantiating.
+     * Instantiates a new coseng. Marked protected to prevent other classes
+     * outside of the package from instantiating.
      *
      * @since 2.0
      * @version.coseng
      */
-    protected Coseng() {
+    protected CosengTests() {
         // do nothing;
     }
 
@@ -71,10 +75,10 @@ public class Coseng {
      * @param args
      *            the command line arguments to configure a COSENG test
      *            execution; -help for usage and options
+     * @see com.sios.stc.coseng.RunTests#main(String[])
      * @see com.sios.stc.coseng.run.Node
      * @see com.sios.stc.coseng.run.Test
      * @see com.sios.stc.coseng.run.Tests
-     * @see com.sios.stc.coseng.run.CosengRunner#populate(Tests)
      * @since 2.0
      * @version.coseng
      */
@@ -88,13 +92,13 @@ public class Coseng {
         /* Get the tests from requested Node and Tests JSON */
         try {
             parseCliArguments(args);
-            tests = GetTests.with(jsonNodeFile, jsonTestsFile);
-            CosengRunner.populate(tests);
+            tests = GetTests.with(jsonNode, jsonNodeInput, jsonTests, jsonTestsInput);
             log.info(GetTests.configuration());
+            tieLogging();
         } catch (CosengException e) {
             log.fatal("Getting tests", e);
-            log.info(HelpParameter.getNode());
-            log.info(HelpParameter.getTest());
+            log.info(Help.getNode());
+            log.info(Help.getTest());
             System.exit(EXIT_FAILURE);
         }
         /*
@@ -119,10 +123,12 @@ public class Coseng {
             executor.awaitTermination(EXECUTOR_TIMEOUT_MINUTES, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             executionFailure = true;
-            log.error("Executor timeout reached; testing interrupted", e);
+            log.error("Executor timeout reached; testing interrupted {}", e);
         }
         /* Report the test results */
         log.info("Reports @ " + tests.getReportDirectories());
+        log.debug("Total local node web driver started [{}]; stopped [{}]",
+                CosengRunner.getStartedWebDriverCount(), CosengRunner.getStoppedWebDriverCount());
         List<String> failedTests = tests.getFailed();
         if (executionFailure || !failedTests.isEmpty()) {
             log.error("Testing completed; with failures "
@@ -151,7 +157,7 @@ public class Coseng {
      * @version.coseng
      */
     private static void parseCliArguments(String[] args) throws CosengException {
-        final String jsonTestsDemo = "Demo.json";
+        final String jsonTestsDemo = "coseng/tests/demo/suite-files.json";
         Boolean exitFailure = null;
         HelpFormatter formatter = new HelpFormatter();
         final String optHelp = "help";
@@ -174,45 +180,46 @@ public class Coseng {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(options, args);
             /* Get the option values */
-            String jsonNode = cli.getOptionValue(optNode);
-            String jsonTests = cli.getOptionValue(optTests);
+            jsonNode = cli.getOptionValue(optNode);
+            jsonTests = cli.getOptionValue(optTests);
             /* Check option expectations */
             if (cli.hasOption(optHelp)) {
                 exitFailure = false;
-            }
-            if (cli.hasOption(optNode)) {
-                if (!cli.getOptionValue(optNode).isEmpty()) {
-                    jsonNodeFile = Resource.get(jsonNode);
-                } else {
-                    log.fatal("-" + optNode + " <arg> empty");
-                    exitFailure = true;
-                }
-            }
-            if (cli.hasOption(optTests)) {
-                if (cli.hasOption(optDemo)) {
-                    log.fatal("-" + optTests + " or -" + optDemo + "; not both");
-                    exitFailure = true;
-                } else if (!cli.getOptionValue(optTests).isEmpty()) {
-                    jsonTestsFile = Resource.get(jsonTests);
-                } else {
-                    log.fatal("-" + optTests + " <arg> empty");
-                    exitFailure = true;
-                }
             } else {
-                if (cli.hasOption(optDemo)) {
-                    jsonTestsFile = Resource.get(jsonTestsDemo);
+                if (cli.hasOption(optNode)) {
+                    if (!cli.getOptionValue(optNode).isEmpty()) {
+                        jsonNodeInput = Resource.get(jsonNode);
+                    } else {
+                        log.fatal("-" + optNode + " <arg> empty");
+                        exitFailure = true;
+                    }
+                }
+                if (cli.hasOption(optTests)) {
+                    if (cli.hasOption(optDemo)) {
+                        log.fatal("-" + optTests + " or -" + optDemo + "; not both");
+                        exitFailure = true;
+                    } else if (!cli.getOptionValue(optTests).isEmpty()) {
+                        jsonTestsInput = Resource.get(jsonTests);
+                    } else {
+                        log.fatal("-" + optTests + " <arg> empty");
+                        exitFailure = true;
+                    }
                 } else {
-                    log.fatal("-" + optTests + " <arg> required");
-                    exitFailure = true;
+                    if (cli.hasOption(optDemo)) {
+                        jsonTestsInput = Resource.get(jsonTestsDemo);
+                    } else {
+                        log.fatal("-" + optTests + " <arg> required");
+                        exitFailure = true;
+                    }
                 }
             }
             if (exitFailure != null) {
                 final String separator = "-----------------------------------";
                 formatter.printHelp(helpUsage, options);
                 System.out.println(separator);
-                System.out.println(HelpParameter.getNode());
+                System.out.println(Help.getNode());
                 System.out.println(separator);
-                System.out.println(HelpParameter.getTest());
+                System.out.println(Help.getTest());
                 if (exitFailure) {
                     System.exit(EXIT_FAILURE);
                 }
@@ -227,4 +234,52 @@ public class Coseng {
             }
         }
     }
+
+    /**
+     * Tie logging.
+     *
+     * @since 2.0
+     * @version.coseng
+     */
+    private static void tieLogging() {
+        System.setOut(createOutProxy(System.out));
+        System.setErr(createErrorProxy(System.err));
+    }
+
+    /**
+     * Creates the out proxy.
+     *
+     * @param printStream
+     *            the print stream
+     * @return the prints the stream
+     * @since 2.0
+     * @version.coseng
+     */
+    private static PrintStream createOutProxy(PrintStream printStream) {
+        return new PrintStream(printStream) {
+            public void print(String string) {
+                printStream.print(string);
+                log.info("{}", string);
+            }
+        };
+    }
+
+    /**
+     * Creates the error proxy.
+     *
+     * @param printStream
+     *            the print stream
+     * @return the prints the stream
+     * @since 2.0
+     * @version.coseng
+     */
+    private static PrintStream createErrorProxy(PrintStream printStream) {
+        return new PrintStream(printStream) {
+            public void print(String string) {
+                printStream.print(string);
+                log.error("{}", string);
+            }
+        };
+    }
+
 }

@@ -1,5 +1,6 @@
 # Concurrent Selenium TestNG (COSENG)
-Concurrent Selenium TestNG (COSENG) is a Java implementation supporting concurrent (parallel) TestNG and Selenium UI testing. COSENG supports Selenium GRID, local execution on Linux and Win10 and browsers Google Chrome, Mozilla Firefox, Windows Edge and Internet Explorer.
+Concurrent Selenium TestNG (COSENG) is a Java implementation supporting concurrent (parallel) TestNG and Selenium UI testing.
 
-View the COSENG wiki for documentation and details! https://github.com/siostechcorp/coseng/wiki
+* View COSENG [wiki](https://github.com/siostechcorp/coseng/wiki) for all the details!
+* Current COSENG Release [v2.0.0](https://github.com/siostechcorp/coseng/releases/tag/v2.0.0)
 

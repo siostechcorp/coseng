@@ -5,6 +5,8 @@
             "location": "node",
             "browser": "all",
             "oneWebDriver": false,
+            "allowFindUrls": true,
+            "allowScreenshots": true,
             "suites": [
                 "coseng/suites/demo/methods.xml"
             ]

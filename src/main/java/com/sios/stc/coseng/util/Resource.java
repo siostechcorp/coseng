@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -56,6 +57,30 @@ public class Resource {
             throw new CosengException("Can't get name for the resource [" + resource + "]");
         }
         throw new CosengException("Can't get name for null or empty resource");
+    }
+
+    /**
+     * Gets the relative path.
+     *
+     * @param resource
+     *            the resource
+     * @return the relative path
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.1
+     * @version.coseng
+     */
+    public static String getRelativePath(String resource) throws CosengException {
+        if (resource != null && !resource.isEmpty()) {
+            /* Removes leading file separator */
+            String path = FilenameUtils.getPath(resource);
+            if (path != null && !path.isEmpty()) {
+                return path;
+            }
+            throw new CosengException(
+                    "Can't get relative path for the resource [" + resource + "]");
+        }
+        throw new CosengException("Can't get relative path for null or empty resource");
     }
 
     /**
@@ -98,6 +123,13 @@ public class Resource {
      */
     public static InputStream get(String resource) throws CosengException {
         if (resource != null && !resource.isEmpty()) {
+            // check if URL
+            try {
+                URL url = new URL(resource);
+                return url.openStream();
+            } catch (IOException e) {
+                // wasn't a url; keep processing
+            }
             InputStream input = null;
             // check filesystem
             File file = new File(resource);

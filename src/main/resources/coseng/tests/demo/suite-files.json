@@ -5,6 +5,10 @@
             "location": "node",
             "browser": "all",
             "oneWebDriver": false,
+            "allowFindUrls": false,
+            "allowScreenshots": true,
+            "webDriverTimeoutSeconds": 300,
+            "webDriverWaitTimeoutSeconds": 300,
             "suites": [
                 "coseng/suites/demo/suite-files.xml"
             ]

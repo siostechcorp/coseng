@@ -41,7 +41,8 @@ import com.sios.stc.coseng.run.Browsers.Browser;
  *   "geckoDriver": "/usr/local/bin/geckodriver",
  *   "reportsDirectory": "/tmp/reports",
  *   "resourcesTempDirectory": "/tmp/coseng/resources",
- *   "gridUrl": "http://seleniumgrid.host.com:4444/wd/hub"
+ *   "gridUrl": "http://seleniumgrid.host.com:4444/wd/hub",
+ *   "maxTestExecutionMinutes": 60
  * }
  * </pre></code>
  * 
@@ -53,6 +54,7 @@ import com.sios.stc.coseng.run.Browsers.Browser;
  * <dd>gridUrl: http://localhost:4444/wd/hub</dd>
  * <dd>chromeDriver: /usr/bin/chromedriver</dd>
  * <dd>geckoDriver: /usr/bin/geckodriver</dd>
+ * <dd>maxTestExecutionMinutes: 60</dd>
  * <dt>Windows</dt>
  * <dd>reportsDirectory: "" (the current working directory)</dd>
  * <dd>resourcesTempDirectory: %USERPROFILE%\AppData\Local\Temp</dd>
@@ -61,6 +63,7 @@ import com.sios.stc.coseng.run.Browsers.Browser;
  * <dd>geckoDriver: C:\\selenium\\geckodriver.exe</dd>
  * <dd>edgeDriver: C:\\selenium\\MicrosoftWebDriver.exe</dd>
  * <dd>ieDriver: C:\\selenium\\IEDriverServer.exe</dd>
+ * <dd>maxTestExecutionMinutes: 60</dd>
  * </dl>
  *
  * @since 2.0
@@ -80,22 +83,25 @@ class Node {
             "C:\\selenium\\IEDriverServer.exe";
     private String              defaultGridUrl                     = "http://localhost:4444/wd/hub";
     private String              defaultReportsDirectory            = "coseng-reports";
+    private int                 defaultTestExecutionMinutes        = 60;
 
     @Expose
-    private final String reportsDirectory       = defaultReportsDirectory;
+    private final String reportsDirectory        = defaultReportsDirectory;
     @Expose
-    private final String resourcesTempDirectory =
+    private final String resourcesTempDirectory  =
             FileUtils.getTempDirectoryPath() + File.separator + "coseng";
     @Expose
-    private final String chromeDriver           = getDefaultWebDriver(Browser.CHROME);
+    private final String chromeDriver            = getDefaultWebDriver(Browser.CHROME);
     @Expose
-    private final String geckoDriver            = getDefaultWebDriver(Browser.FIREFOX);
+    private final String geckoDriver             = getDefaultWebDriver(Browser.FIREFOX);
     @Expose
-    private final String ieDriver               = getDefaultWebDriver(Browser.IE);
+    private final String ieDriver                = getDefaultWebDriver(Browser.IE);
     @Expose
-    private final String edgeDriver             = getDefaultWebDriver(Browser.EDGE);
+    private final String edgeDriver              = getDefaultWebDriver(Browser.EDGE);
     @Expose
-    private final String gridUrl                = defaultGridUrl;
+    private final String gridUrl                 = defaultGridUrl;
+    @Expose
+    private final int    maxTestExecutionMinutes = defaultTestExecutionMinutes;
 
     /**
      * Gets the reports directory. This is the target directory for the TestNG
@@ -253,6 +259,17 @@ class Node {
         return null;
     }
 
+    /**
+     * Gets the max test execution minutes.
+     *
+     * @return the max test execution minutes
+     * @since 2.0
+     * @version.coseng
+     */
+    protected int getMaxTestExecutionMinutes() {
+        return maxTestExecutionMinutes;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -263,7 +280,8 @@ class Node {
         return "reportsDirectory [" + reportsDirectory + "], resourcesTempDirectory ["
                 + resourcesTempDirectory + "], chromeDriver [" + chromeDriver + "], ieDriver ["
                 + ieDriver + "], geckoDriver [" + geckoDriver + "], edgeDriver [" + edgeDriver
-                + "], gridUrl [" + gridUrl + "]";
+                + "], gridUrl [" + gridUrl + "], maxTestExecutionMinutes ["
+                + maxTestExecutionMinutes + "]";
     }
 
 }

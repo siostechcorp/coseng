@@ -1,7 +1,7 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="OneWebDriver" preserve-order="true">
-  <test name="TestGoogle_Bing">
+<suite name="OneWebDriver" preserve-order="true" parallel="false">
+  <test name="Test Google_Bing">
     <classes>
       <class name="com.sios.stc.coseng.tests.demo.Google">
         <methods>
@@ -15,7 +15,7 @@
       </class>
     </classes>
   </test>
-  <test name="TestDuckDuckGo_Ask">
+  <test name="Test DuckDuckGo_Ask">
     <classes>
       <class name="com.sios.stc.coseng.tests.demo.DuckDuckGo">
         <methods>

@@ -17,14 +17,11 @@
 package com.sios.stc.coseng.run;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.paulhammant.ngwebdriver.NgWebDriver;
@@ -38,6 +35,7 @@ import com.paulhammant.ngwebdriver.NgWebDriver;
  * @since 2.0
  * @version.coseng
  */
+@Deprecated
 class WebDriverToolbox {
 
     private Test               test;
@@ -49,6 +47,7 @@ class WebDriverToolbox {
     private NgWebDriver        ngWebDriver;
     private WebDriverUtil      webDriverUtil;
     private WebElements        webElements;
+    private CosengRunner       cosengRunner = new CosengRunner();
 
     /**
      * Instantiates a new web driver toolbox.
@@ -67,28 +66,15 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebDriverToolbox(Test test, WebDriver webDriver, Object webDriverService)
             throws CosengException {
-        if (test != null && webDriver != null) {
-            ((RemoteWebDriver) webDriver).setLogLevel(Level.FINE);
-            webDriver.manage().timeouts().implicitlyWait(test.getWebDriverTimeoutSeconds(),
-                    TimeUnit.SECONDS);
-            webDriverWait = new WebDriverWait(webDriver, test.getWebDriverWaitTimeoutSeconds());
-            actions = new Actions(webDriver);
-            jsExecutor = (JavascriptExecutor) webDriver;
-            ngWebDriver = new NgWebDriver(jsExecutor);
-        } else {
-            throw new CosengException("Error creating WebDriverToolbox");
-        }
-        this.webDriver = webDriver;
-        this.webDriverService = webDriverService;
-        this.webDriverUtil = new WebDriverUtil(test, webDriver);
-        this.webElements = new WebElements();
-        this.test = test;
+        // do nothing
     }
 
+    @Deprecated
     protected Test getTest() {
-        return test;
+        return CosengRunner.getTest();
     }
 
     /**
@@ -98,8 +84,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebDriver getWebDriver() {
-        return webDriver;
+        return CosengRunner.getWebDriver();
     }
 
     /**
@@ -109,8 +96,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected Object getWebDriverService() {
-        return webDriverService;
+        return CosengRunner.getWebDriverService();
     }
 
     /**
@@ -120,8 +108,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebDriverWait getWebDriverWait() {
-        return webDriverWait;
+        return CosengRunner.getWebDriverWait();
     }
 
     /**
@@ -131,8 +120,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected Actions getActions() {
-        return actions;
+        return CosengRunner.getActions();
     }
 
     /**
@@ -142,8 +132,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected JavascriptExecutor getJavascriptExecutor() {
-        return jsExecutor;
+        return CosengRunner.getJavascriptExecutor();
     }
 
     /**
@@ -153,8 +144,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected NgWebDriver getNgWebDriver() {
-        return ngWebDriver;
+        return CosengRunner.getNgWebDriver();
     }
 
     /**
@@ -165,8 +157,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebDriverUtil getWebDriverUtil() {
-        return webDriverUtil;
+        return cosengRunner.getWebDriverUtil();
     }
 
     /**
@@ -181,10 +174,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebElement newWebElement(final By by) throws CosengException {
-        WebElement webElement = new WebElement(this, by);
-        webElements.add(webElement);
-        return webElement;
+        return cosengRunner.newWebElement(by);
     }
 
     /**
@@ -196,8 +188,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected WebElements getWebElements() {
-        return webElements;
+        return cosengRunner.getWebElements();
     }
 
     /**
@@ -209,8 +202,9 @@ class WebDriverToolbox {
      * @since 2.0
      * @version.coseng
      */
+    @Deprecated
     protected List<WebElement> getWebElementList() {
-        return webElements.get();
+        return cosengRunner.getWebElementList();
     }
 
 }

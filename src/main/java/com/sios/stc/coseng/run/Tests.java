@@ -30,6 +30,8 @@ import com.google.gson.annotations.Expose;
  */
 class Tests {
 
+    private int maxTestExecutionMinutes = 0;
+
     @Expose
     private final List<Test> tests = new ArrayList<Test>();
 
@@ -202,6 +204,31 @@ class Tests {
             }
         }
         return failed;
+    }
+
+    /**
+     * Gets the max test execution minutes.
+     *
+     * @return the max test execution minutes
+     * @since 2.1
+     * @version.coseng
+     */
+    protected int getMaxTestExecutionMinutes() {
+        return this.maxTestExecutionMinutes;
+    }
+
+    /**
+     * Sets the max test execution minutes.
+     *
+     * @param maxTestExecutionMinutes
+     *            the new max test execution minutes
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setMaxTestExecutionMinutes(int maxTestExecutionMinutes) {
+        if (maxTestExecutionMinutes > 0) {
+            this.maxTestExecutionMinutes = maxTestExecutionMinutes;
+        }
     }
 
 }

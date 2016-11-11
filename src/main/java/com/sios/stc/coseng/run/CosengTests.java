@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
@@ -29,6 +30,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,11 +46,9 @@ import com.sios.stc.coseng.util.Resource;
  */
 public class CosengTests {
 
-    private static final int    EXIT_SUCCESS             = 0;
-    private static final int    EXIT_FAILURE             = 1;
-    private static final int    EXECUTOR_TIMEOUT_MINUTES = 5;
-    private static final Logger log                      =
-            LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log          = LogManager.getLogger(RunTests.class.getName());
+    private static final int    EXIT_SUCCESS = 0;
+    private static final int    EXIT_FAILURE = 1;
     private static String       jsonTests;
     private static InputStream  jsonTestsInput;
     private static String       jsonNode;
@@ -106,28 +106,31 @@ public class CosengTests {
          * parallel and shutdown
          */
         boolean executionFailure = false;
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executorPool = Executors.newCachedThreadPool();
+        StopWatch stopWatch = new StopWatch();
         try {
             log.info("Testing started");
+            stopWatch.start();
             for (String name : tests.getNames()) {
                 Test test = tests.getTest(name);
                 final Runnable worker = new Concurrent(test);
-                executor.execute(worker);
+                executorPool.execute(worker);
             }
-        } catch (CosengException e) {
+            executorPool.shutdown();
+            executorPool.awaitTermination(tests.getMaxTestExecutionMinutes(), TimeUnit.MINUTES);
+        } catch (CosengException | RejectedExecutionException e) {
             executionFailure = true;
-            log.error("Unable to create test worker; not all tests executed", e);
-        }
-        executor.shutdown();
-        try {
-            executor.awaitTermination(EXECUTOR_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            log.error("Unable to create test worker", e);
         } catch (InterruptedException e) {
             executionFailure = true;
-            log.error("Executor timeout reached; testing interrupted {}", e);
+            executorPool.shutdownNow();
+            log.error("Test execution time exceeded", e);
         }
+        stopWatch.stop();
+        log.info("Elapsed time (hh:mm:ss:ms) [{}]", stopWatch.toString());
         /* Report the test results */
         log.info("Reports @ " + tests.getReportDirectories());
-        log.debug("Total local node web driver started [{}]; stopped [{}]",
+        log.info("Total web driver started [{}]; stopped [{}]",
                 CosengRunner.getStartedWebDriverCount(), CosengRunner.getStoppedWebDriverCount());
         List<String> failedTests = tests.getFailed();
         if (executionFailure || !failedTests.isEmpty()) {

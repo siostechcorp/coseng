@@ -19,6 +19,7 @@ package com.sios.stc.coseng.run;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.ITestNGListener;
@@ -65,10 +66,12 @@ class Concurrent implements Runnable {
         Thread thread = Thread.currentThread();
         String name = test.getName();
         /* Seed runner */
-        CosengRunner.setThreadTest(thread, test);
+        CosengRunner.addThreadTest(thread, test);
         log.debug("Test [{}] thread [{}] {}]", name, thread.getId(), thread.getName());
         TestNG testNg = new TestNG();
+        StopWatch stopWatch = new StopWatch();
         try {
+            stopWatch.start();
             testNg.setXmlSuites(test.getXmlSuites());
             testNg.setVerbose(test.getVerbosity());
             testNg.setOutputDirectory(test.getReportDirectory());
@@ -83,6 +86,9 @@ class Concurrent implements Runnable {
             if (testNg.hasFailure()) {
                 test.setIsFailed(true);
             }
+            stopWatch.stop();
+            log.info("Test [{}] completed; elapsed time (hh:mm:ss:ms) [{}]", name,
+                    stopWatch.toString());
         } catch (Exception e) {
             test.setIsFailed(true);
             throw new RuntimeException("Unable to execute TestNG run for test [" + name + "]", e);

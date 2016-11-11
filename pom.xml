@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.sios.stc.coseng</groupId>
   <artifactId>coseng</artifactId>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
   <properties>
     <coseng.version>2.0</coseng.version>
     <java.source.version>1.8</java.source.version>
@@ -177,7 +177,7 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${maven.javadoc.plugin.version}</version>
         <configuration>
-          <author>false</author>
+          <author>true</author>
           <tags>
             <tag>
               <name>version.coseng</name>

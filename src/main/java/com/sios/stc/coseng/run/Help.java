@@ -49,22 +49,28 @@ class Help {
         Node node = new Node();
         List<String> p = new ArrayList<String>();
         p.add("Supported Node JSON Options & Example");
+
         p.add(space(1, "reportsDirectory: (optional) String"));
         p.add(space(2, "Default [" + node.getReportsDirectory() + "]"));
+
         p.add(space(1, "resourcesTempDirectory: (optional) String"));
         p.add(space(2, "Default [" + node.getResourcesTempDirectory() + "]"));
-        p.add(space(2, "Note: platform dependent"));
-        final String PLATFORM_DEPENDS = "Note: platform dependent for location [" + Location.NODE
-                + "], ignored for location [" + Location.GRID + ")";
+        p.add(space(2, "Platform dependent"));
+        final String PLATFORM_DEPENDS = "Platform dependent for location [" + Location.NODE
+                + "]; ignored for location [" + Location.GRID + ")";
+
         p.add(space(1, "chromeDriver: (optional) String"));
         p.add(space(2, "Default [" + node.getChromeDriver() + "]"));
         p.add(space(2, PLATFORM_DEPENDS));
+
         p.add(space(1, "geckoDriver: (optional) String"));
         p.add(space(2, "Default [" + node.getGeckoDriver() + "]"));
         p.add(space(2, PLATFORM_DEPENDS));
+
         p.add(space(1, "ieDriver: (optional) String"));
         p.add(space(2, "Default [" + node.getIeDriver() + "]"));
         p.add(space(2, PLATFORM_DEPENDS));
+
         p.add(space(1, "edgeDriver: (optional) String"));
         p.add(space(2, "Default [" + node.getEdgeDriver() + "]"));
         p.add(space(2, PLATFORM_DEPENDS));
@@ -81,6 +87,11 @@ class Help {
         p.add(space(1, "gridUrl: (optional) String"));
         p.add(space(2, "Default [" + gridUrl + "]"));
         p.add(space(2, "Note: provided for undefined Test gridUrl"));
+
+        p.add(space(1, "maxTestExecutionMinutes: (optional) Integer > 0"));
+        p.add(space(2, "Default [" + node.getMaxTestExecutionMinutes() + "]"));
+        p.add(space(2, "Note: timeout for executor pool"));
+
         p.add(space(1, ""));
         p.add(getJson(node));
         return StringUtils.join(p, System.lineSeparator());
@@ -102,33 +113,59 @@ class Help {
         p.add("Supported Test JSON Options & Example");
         p.add(space(1, "name: (required) String"));
         p.add(space(2, "Default [" + test.getName() + "]"));
-        p.add(space(2, "Note: names must be unique"));
-        p.add(space(1, "verbosity: (optional) Integer 0..10"));
-        p.add(space(2, "Default [" + test.getVerbosity() + "]"));
-        p.add(space(2, "Note: TestNG logging level"));
+
         p.add(space(1, "location: (optional) Location " + Locations.get()));
         p.add(space(2, "Default [" + test.getLocation() + "]"));
+
         p.add(space(1, "platform: (optional) Platform " + Platforms.get()));
         p.add(space(2, "Default [" + test.getPlatform() + "]"));
-        p.add(space(2, "Note: operating system dependent for location [" + Location.NODE + "]"));
+        p.add(space(2, "Operating system dependent for location [" + Location.NODE + "]"));
+
         p.add(space(1, "browser: (optional) Browser " + Browsers.get()));
         p.add(space(2, "Default [" + test.getBrowser() + "]"));
-        p.add(space(2, "Note: platform dependent for location [" + Location.NODE + "]"));
+        p.add(space(2, "Platform dependent for location [" + Location.NODE + "]"));
+
         p.add(space(1, "browserVersion: (optional) String"));
         p.add(space(2, "Default [" + Browsers.BROWSER_VERSION_DEFAULT + "]"));
-        p.add(space(2, "Note: ignored for location [" + Location.NODE + "]"));
+        p.add(space(2, "Ignored for location [" + Location.NODE + "]"));
+
+        p.add(space(1, "browserWidth: (optional) Integer > 0"));
+        p.add(space(2, "Default [" + test.getBrowserWidth() + "]"));
+        p.add(space(2, "If defined, browserHeight must also be defined"));
+
+        p.add(space(1, "browserHeight: (optional) Integer > 0"));
+        p.add(space(2, "Default [" + test.getBrowserHeight() + "]"));
+        p.add(space(2, "If defined, browserWidth must also be defined"));
+
+        p.add(space(1, "browserMaximize: (optional) boolean"));
+        p.add(space(2, "Default [" + test.getBrowserMaximize() + "]"));
+        p.add(space(2, "If defined, overrides browser width and height"));
+
         p.add(space(1, "incognito: (optional) boolean"));
         p.add(space(2, "Default [" + test.isIncognito() + "]"));
+
         p.add(space(1, "acceptInvalidCerts: (optional) boolean"));
         p.add(space(2, "Default [" + test.isAcceptInvalidCerts() + "]"));
+
+        p.add(space(1, "angular2App: (optional) boolean"));
+        p.add(space(2, "Default [" + test.isAngular2App() + "]"));
+
+        p.add(space(1, "allowFindUrls: (optional) boolean"));
+        p.add(space(2, "Default [" + test.isAllowFindUrls() + "]"));
+
+        p.add(space(1, "allowScreenshots: (optional) boolean"));
+        p.add(space(2, "Default [" + test.isAllowScreenshots() + "]"));
+
         p.add(space(1, "suites: (required) list of String"));
         p.add(space(2, "Default " + test.getSuites()));
+
         p.add(space(1, "baseUrl: (optional) String"));
         p.add(space(2, "Default [" + test.getBaseUrl() + "]"));
-        final String GRIDURL_DEPENDS = "Note: (required) for location [" + Location.GRID
-                + "], (optional) String for location [" + Location.NODE + "]";
+
+        final String GRIDURL_DEPENDS1 = "(required) String for location [" + Location.GRID + "]";
+        final String GRIDURL_DEPENDS2 = "(optional) String for location [" + Location.NODE + "]";
         final String GRIDURL_NOTE =
-                "Note: if defined, overrides defined Node gridUrl, ignored for location ["
+                "If defined this overrides any defined Node JSON gridUrl; ignored for location ["
                         + Location.NODE + "]";
         String gridUrl;
         try {
@@ -140,17 +177,26 @@ class Help {
         } catch (CosengException e) {
             gridUrl = e.getCause().toString();
         }
-        p.add(space(1, "gridUrl: (required) String"));
+        p.add(space(1, "gridUrl: (optional) String"));
         p.add(space(2, "Default [" + gridUrl + "]"));
-        p.add(space(2, GRIDURL_DEPENDS));
+        p.add(space(2, GRIDURL_DEPENDS1));
+        p.add(space(2, GRIDURL_DEPENDS2));
         p.add(space(2, GRIDURL_NOTE));
+
         p.add(space(1, "oneWebDriver: (optional) boolean"));
         p.add(space(2, "Default [" + test.isOneWebDriver() + "]"));
-        p.add(space(2, "Note: all suites must have parallel=\"false\" if oneWebDriver [true]"));
+        p.add(space(2, "If oneWebDriver [true] all suites must have parallel=\"false\""));
+
         p.add(space(1, "webDriverTimeoutSeconds: (optional) Integer"));
         p.add(space(2, "Default [" + test.getWebDriverTimeoutSeconds() + "]"));
+
         p.add(space(1, "webDriverWaitTimeoutSeconds: (optional) Integer"));
         p.add(space(2, "Default [" + test.getWebDriverWaitTimeoutSeconds() + "]"));
+
+        p.add(space(1, "verbosity: (optional) Integer 0..10"));
+        p.add(space(2, "Default [" + test.getVerbosity() + "]"));
+        p.add(space(2, "TestNG logging level"));
+
         p.add(space(1, ""));
         test.setName("testHelp");
         List<String> suites = test.getSuites();

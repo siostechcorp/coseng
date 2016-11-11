@@ -19,7 +19,6 @@ package com.sios.stc.coseng.tests.demo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -30,32 +29,71 @@ import com.sios.stc.coseng.run.WebElement;
 
 public class Ask extends CosengRunner {
 
-    private static final String ELEMENT_SEARCHFORM = "search-box";
-    private static final String URL                = "http://www.ask.com";
-    private static final Logger log                = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
 
     @Test(description = "Verify connect to Ask and search")
     public void connect1() throws CosengException {
+        String url = "http://www.ask.com";
+        String searchform = "search-box";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
-        WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
-                webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+                getWebDriver().hashCode(), Thread.currentThread().getId());
+
+        /*
+         * Get the url and assure on correct route. Note: Using the convenience
+         * method. Can always get the web driver with WebDriver webDriver =
+         * getWebDriver();
+         */
+        webDriverGet(url);
+        Assert.assertTrue(currentUrlContains(url));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weSearchForm = newWebElement(By.id(searchform));
+        weSearchForm.find();
+        Assert.assertTrue(weSearchForm.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("ask-connect1");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
+
     }
 
-    @Test(description = "Verify connect to Ask and search")
+    @Test(description = "Verify connect to Ask About and help button")
     public void connect2() throws CosengException {
+        String url = "http://about.ask.com";
+        String helpButton = "/html/body/section/aside/button";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
-        WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
-                webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+                getWebDriver().hashCode(), Thread.currentThread().getId());
+
+        /*
+         * Get the url and assure on correct route. Note: Using the convenience
+         * method. Can always get the web driver with WebDriver webDriver =
+         * getWebDriver();
+         */
+        webDriverGet(url);
+        Assert.assertTrue(currentUrlContains(url));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weHelpButton = newWebElement(By.xpath(helpButton));
+        weHelpButton.find();
+        Assert.assertTrue(weHelpButton.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("ask-connect2");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
 }

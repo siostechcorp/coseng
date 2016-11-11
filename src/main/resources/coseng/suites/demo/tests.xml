@@ -1,7 +1,7 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="ParallelTests" preserve-order="true" parallel="tests">
-  <test name="TestGoogle">
+  <test name="Google_connect1">
     <classes>
       <class name="com.sios.stc.coseng.tests.demo.Google">
         <methods>
@@ -10,9 +10,18 @@
       </class>
     </classes>
   </test>
-  <test name="TestBing">
+  <test name="Bing_connect1">
     <classes>
       <class name="com.sios.stc.coseng.tests.demo.Bing">
+        <methods>
+          <include name="connect1" />
+        </methods>
+      </class>
+    </classes>
+  </test>
+  <test name="DuckDuckGo_connect1">
+    <classes>
+      <class name="com.sios.stc.coseng.tests.demo.DuckDuckGo">
         <methods>
           <include name="connect1" />
         </methods>

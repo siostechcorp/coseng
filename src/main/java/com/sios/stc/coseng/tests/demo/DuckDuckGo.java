@@ -19,7 +19,6 @@ package com.sios.stc.coseng.tests.demo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -30,32 +29,39 @@ import com.sios.stc.coseng.run.WebElement;
 
 public class DuckDuckGo extends CosengRunner {
 
-    private static final String ELEMENT_SEARCHFORM = "search_form_input_homepage";
-    private static final String URL                = "http://www.duckduckgo.com";
-    private static final Logger log                = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
 
     @Test(description = "Verify connect to DuckDuckGo and search")
     public void connect1() throws CosengException {
-        Assert.assertTrue(hasWebDriver(), "No web driver");
-        WebDriver webDriver = getWebDriver();
-        log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
-                webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
-    }
+        String searchForm = "search_form_input_homepage";
+        String url = "https://www.duckduckgo.com";
+        String redirectedUrl = "https://duckduckgo.com";
 
-    @Test(description = "Verify connect to DuckDuckGo and search")
-    public void connect2() throws CosengException {
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
-        WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
-                webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+                getWebDriver().hashCode(), Thread.currentThread().getId());
+
+        /*
+         * Get the url and assure on correct route. Note: Using the convenience
+         * method. Can always get the web driver with WebDriver webDriver =
+         * getWebDriver();
+         */
+        webDriverGet(url);
+        Assert.assertTrue(currentUrlContains(redirectedUrl));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weSearchForm = newWebElement(By.id(searchForm));
+        weSearchForm.find();
+        Assert.assertTrue(weSearchForm.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("duckDuckGo-connect1");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
 }

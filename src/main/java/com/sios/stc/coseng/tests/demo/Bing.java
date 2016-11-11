@@ -30,32 +30,64 @@ import com.sios.stc.coseng.run.WebElement;
 
 public class Bing extends CosengRunner {
 
-    private static final String ELEMENT_SEARCHFORM = "sb_form_q";
-    private static final String URL                = "http://www.bing.com";
-    private static final Logger log                = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
 
     @Test(description = "Verify connect to Bing and search")
     public void connect1() throws CosengException {
+        String searchform = "sb_form_q";
+        String url = "http://www.bing.com";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
         WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+
+        /* Get the url and assure on correct route. */
+        webDriver.get(url);
+        Assert.assertTrue(currentUrlContains(url));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weSearchForm = newWebElement(By.id(searchform));
+        weSearchForm.find();
+        Assert.assertTrue(weSearchForm.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("bing-connect1");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
-    @Test(description = "Verify connect to Bing and search")
+    @Test(description = "Verify connect to Bing Help and search")
     public void connect2() throws CosengException {
+        String searchForm = "//*[@id=\"searchquery\"]";
+        String url = "http://help.bing.microsoft.com/#apex/18/en-US/n1999/-1/en-US";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
         WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+
+        /* Get the url and assure on correct route. */
+        webDriver.get(url);
+        Assert.assertTrue(currentUrlContains(url));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weSearchForm = newWebElement(By.xpath(searchForm));
+        weSearchForm.find();
+        Assert.assertTrue(weSearchForm.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("bing-connect2");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
 }

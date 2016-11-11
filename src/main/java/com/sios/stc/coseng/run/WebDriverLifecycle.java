@@ -33,6 +33,7 @@ import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.ie.InternetExplorerDriverService;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.LocalFileDetector;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import com.sios.stc.coseng.RunTests;
@@ -59,14 +60,13 @@ class WebDriverLifecycle {
      *
      * @param test
      *            the test
-     * @return the web driver toolbox
      * @throws CosengException
      *             the coseng exception
      * @see com.sios.stc.coseng.run.CosengRunner
      * @since 2.0
      * @version.coseng
      */
-    protected static WebDriverToolbox startWebDriver(final Test test) throws CosengException {
+    protected static void startWebDriver(final Test test) throws CosengException {
         /*
          * Creating the WebDriver object starts the backing browser instance at
          * once. There is no delay of the instantiation. Make sure ready for it.
@@ -231,7 +231,16 @@ class WebDriverLifecycle {
                     webDriver = new RemoteWebDriver(gridUrl, dc);
                 }
             }
-            return new WebDriverToolbox(test, webDriver, webDriverService);
+            /* Set the file detector for uploads; set early */
+            ((RemoteWebDriver) webDriver).setFileDetector(new LocalFileDetector());
+            /* Set dimension or maximize */
+            if (test.getBrowserDimension() != null) {
+                webDriver.manage().window().setSize(test.getBrowserDimension());
+            } else if (test.getBrowserMaximize()) {
+                webDriver.manage().window().maximize();
+            }
+            /* Make CosengRunner aware of Selenium tooling */
+            CosengRunner.setSeleniumTools(webDriver, webDriverService);
         } catch (Exception e) {
             throw new CosengException(
                     "Error starting web driver; browser/web driver version mismatch?; check for orphaned web driver processes.",
@@ -242,18 +251,19 @@ class WebDriverLifecycle {
     /**
      * Stop web driver.
      *
-     * @param webDriverToolbox
-     *            the web driver toolbox
+     * @param webDriver
+     *            the web driver
+     * @param webDriverService
+     *            the web driver service
      * @throws CosengException
      *             the coseng exception
      * @see com.sios.stc.coseng.run.CosengRunner
      * @since 2.0
      * @version.coseng
      */
-    protected static void stopWebDriver(WebDriverToolbox webDriverToolbox) throws CosengException {
+    protected static void stopWebDriver(WebDriver webDriver, Object webDriverService)
+            throws CosengException {
         try {
-            WebDriver webDriver = webDriverToolbox.getWebDriver();
-            Object webDriverService = webDriverToolbox.getWebDriverService();
             webDriver.close();
             webDriver.quit();
             if (webDriverService != null) {

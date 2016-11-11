@@ -25,7 +25,7 @@ import java.util.List;
  * @since 2.0
  * @version.coseng
  */
-class Browsers {
+public class Browsers {
 
     /**
      * The Enum Browser.
@@ -33,7 +33,7 @@ class Browsers {
      * @since 2.0
      * @version.coseng
      */
-    protected static enum Browser {
+    public static enum Browser {
         ALL, FIREFOX, CHROME, IE, EDGE;
     }
 

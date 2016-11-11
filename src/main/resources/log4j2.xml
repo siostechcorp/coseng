@@ -2,10 +2,10 @@
 <Configuration>
   <Appenders>
     <File name="File" fileName="coseng.log">
-      <PatternLayout pattern="%d{DATE} %highlight{%-5level} %logger{15} [%t]; %msg%n" />
+      <PatternLayout pattern="%d{DATE} %highlight{%-5level}: [%t] [%l]; %msg%n" />
     </File>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%highlight{%-5level}: [%t]; %msg%n" />
+      <PatternLayout pattern="%highlight{%-5level}: [%t] [%l]; %msg%n" />
     </Console>
   </Appenders>
   <Loggers>

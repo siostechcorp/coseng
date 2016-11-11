@@ -18,6 +18,7 @@ package com.sios.stc.coseng.run;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -41,7 +42,7 @@ public class WebElement {
     public static final String ATTR_DISABLED = "disabled";
     public static final String ATTR_ENABLED  = "enabled";
 
-    private static final String            WEB_ELEMENT_TAG_NAME_INPUT = "input";
+    private static final String            TAG_NAME_INPUT = "input";
     private org.openqa.selenium.WebElement webElement;
     private By                             by;
     private WebDriver                      webDriver;
@@ -52,8 +53,6 @@ public class WebElement {
     /**
      * Instantiates a new web element.
      *
-     * @param webDriverToolbox
-     *            the web driver toolbox
      * @param by
      *            the by
      * @throws CosengException
@@ -61,20 +60,15 @@ public class WebElement {
      * @since 2.0
      * @version.coseng
      */
-    public WebElement(final WebDriverToolbox webDriverToolbox, final By by) throws CosengException {
-        if (webDriverToolbox != null) {
-            webDriver = webDriverToolbox.getWebDriver();
-            webDriverWait = webDriverToolbox.getWebDriverWait();
-            actions = webDriverToolbox.getActions();
-            jsExecutor = webDriverToolbox.getJavascriptExecutor();
-            if (webDriver == null || webDriverWait == null || actions == null
-                    || jsExecutor == null) {
-                throw new CosengException("webDriverToolbox corrupt; nothing to do");
-            }
-            this.by = by;
-        } else {
-            throw new CosengException("webDriverToolbox is null; was web driver started?");
+    public WebElement(By by) throws CosengException {
+        webDriver = CosengRunner.getWebDriver();
+        webDriverWait = CosengRunner.getWebDriverWait();
+        actions = CosengRunner.getActions();
+        jsExecutor = CosengRunner.getJavascriptExecutor();
+        if (webDriver == null || webDriverWait == null || actions == null || jsExecutor == null) {
+            throw new CosengException("Selenium tools corrupt; nothing to do");
         }
+        this.by = by;
     }
 
     /**
@@ -143,7 +137,7 @@ public class WebElement {
      */
     public void clear() {
         if (webElement != null && webElement.getTagName() != null
-                && webElement.getTagName().equals(WEB_ELEMENT_TAG_NAME_INPUT)) {
+                && webElement.getTagName().equals(TAG_NAME_INPUT)) {
             webElement.clear();
         }
     }
@@ -157,7 +151,21 @@ public class WebElement {
     public void makeVisible() {
         if (webElement != null) {
             jsExecutor.executeScript(
-                    "arguments[0].style.left='auto';arguments[0].style.visibility='visible';",
+                    "arguments[0].style.left='auto';arguments[0].style.visibility='visible';arguments[0].style.display='block'",
+                    webElement);
+        }
+    }
+
+    /**
+     * Make invisible.
+     *
+     * @since 2.1
+     * @version.coseng
+     */
+    public void makeInvisible() {
+        if (webElement != null) {
+            jsExecutor.executeScript(
+                    "arguments[0].style.left='initial';arguments[0].style.visibility='hidden';arguments[0].style.visibility='none'",
                     webElement);
         }
     }
@@ -191,6 +199,32 @@ public class WebElement {
     }
 
     /**
+     * Wait until text contains.
+     *
+     * @param text
+     *            the text
+     * @return true, if successful
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean waitUntilTextContains(String text) {
+        return textMatchBy(text, MatchBy.CONTAIN, true);
+    }
+
+    /**
+     * Wait until text equals.
+     *
+     * @param text
+     *            the text
+     * @return true, if successful
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean waitUntilTextEquals(String text) {
+        return textMatchBy(text, MatchBy.EQUAL, true);
+    }
+
+    /**
      * Text contains.
      *
      * @param text
@@ -200,7 +234,7 @@ public class WebElement {
      * @version.coseng
      */
     public boolean textContains(String text) {
-        return textMatchBy(text, MatchBy.CONTAIN);
+        return textMatchBy(text, MatchBy.CONTAIN, false);
     }
 
     /**
@@ -213,7 +247,7 @@ public class WebElement {
      * @version.coseng
      */
     public boolean textEquals(String text) {
-        return textMatchBy(text, MatchBy.EQUAL);
+        return textMatchBy(text, MatchBy.EQUAL, false);
     }
 
     /**
@@ -224,7 +258,7 @@ public class WebElement {
      * @version.coseng
      */
     public boolean textEmpty() {
-        return textMatchBy(null, MatchBy.EMPTY);
+        return textMatchBy(null, MatchBy.EMPTY, false);
     }
 
     /**
@@ -234,13 +268,24 @@ public class WebElement {
      *            the text
      * @param matchBy
      *            the match by
+     * @param wait
+     *            the wait
      * @return true, if successful
      * @since 2.0
      * @version.coseng
      */
-    private boolean textMatchBy(String text, MatchBy matchBy) {
+    private boolean textMatchBy(String text, MatchBy matchBy, boolean wait) {
         boolean matched = false;
         if (webElement != null) {
+            /* Courtesy wait until text present; if timeout will be false */
+            if (wait && text != null) {
+                try {
+                    webDriverWait
+                            .until(ExpectedConditions.textToBePresentInElement(webElement, text));
+                } catch (TimeoutException e) {
+                    // do nothing; will be false
+                }
+            }
             String elementText = webElement.getText();
             if (elementText != null) {
                 if (text == null && MatchBy.EMPTY.equals(matchBy)) {
@@ -279,7 +324,21 @@ public class WebElement {
      * @version.coseng
      */
     public void waitUntilVisible() {
-        webDriverWait.until(ExpectedConditions.visibilityOf(webElement));
+        if (webElement != null) {
+            webDriverWait.until(ExpectedConditions.visibilityOf(webElement));
+        }
+    }
+
+    /**
+     * Wait until invisible.
+     *
+     * @since 2.1
+     * @version.coseng
+     */
+    public void waitUntilInvisible() {
+        if (this.getBy() != null) {
+            webDriverWait.until(ExpectedConditions.invisibilityOfElementLocated(this.getBy()));
+        }
     }
 
     /**
@@ -346,6 +405,43 @@ public class WebElement {
                             + value + "]");
         }
         return matched;
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param string
+     *            the string
+     * @since 2.1
+     * @version.coseng
+     */
+    public void sendKeys(String string) {
+        if (string != null && actions != null && webElement != null) {
+            actions.moveToElement(webElement).sendKeys(webElement, string).build().perform();
+        }
+    }
+
+    /**
+     * Move to.
+     *
+     * @since 2.1
+     * @version.coseng
+     */
+    public void moveTo() {
+        if (actions != null && webElement != null) {
+            actions.moveToElement(webElement).build().perform();
+        }
+    }
+
+    /**
+     * Gets the rgba background color.
+     *
+     * @return the rgba background color
+     * @since 2.1
+     * @version.coseng
+     */
+    public String getRgbaBackgroundColor() {
+        return this.get().getCssValue("background-color");
     }
 
 }

@@ -1,9 +1,9 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="ParallelMethods" preserve-order="true" parallel="methods">
-  <test name="TestGoogle">
+  <test name="Ask_connect1_2">
     <classes>
-      <class name="com.sios.stc.coseng.tests.demo.Google">
+      <class name="com.sios.stc.coseng.tests.demo.Ask">
         <methods>
           <include name="connect1" />
           <include name="connect2" />

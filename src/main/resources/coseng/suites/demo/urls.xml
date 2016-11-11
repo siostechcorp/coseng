@@ -1,0 +1,13 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="All URLs Accessible Suite" preserve-order="true" parallel="false">
+  <test name="All URLs Accessible">
+    <classes>
+      <class name="com.sios.stc.coseng.tests.demo.Urls">
+        <methods>
+          <include name="accessible" />
+        </methods>
+      </class>
+    </classes>
+  </test>
+</suite>

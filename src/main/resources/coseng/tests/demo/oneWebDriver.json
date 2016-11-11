@@ -5,6 +5,8 @@
             "location": "node",
             "browser": "all",
             "oneWebDriver": true,
+            "allowFindUrls": true,
+            "allowScreenshots": true,
             "suites": [
                 "coseng/suites/demo/oneWebDriver.xml"
             ]

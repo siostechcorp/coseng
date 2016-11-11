@@ -18,6 +18,7 @@ package com.sios.stc.coseng.run;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.WebDriver;
 import org.testng.IClassListener;
 import org.testng.IExecutionListener;
 import org.testng.IInvokedMethod;
@@ -30,6 +31,7 @@ import org.testng.ITestListener;
 import org.testng.ITestResult;
 import org.testng.xml.XmlSuite.ParallelMode;
 
+import com.rits.cloning.Cloner;
 import com.sios.stc.coseng.RunTests;
 
 /**
@@ -50,14 +52,15 @@ import com.sios.stc.coseng.RunTests;
  *
  * 
  * <dl>
- * <dt>TestNG &lt;suite parallel="false|none"&gt; and Coseng Test JSON oneWebDriver "true"</dt>
+ * <dt>TestNG &lt;suite parallel="false|none"&gt; and Coseng Test JSON
+ * oneWebDriver "true"</dt>
  * <dd>One web driver will be started at the start of TestNG execution</dd>
  * <dd>It will persist across all suites and tests and will be the only web
  * driver presented</dd>
  * <dd>The singular web driver will be stopped at the end of TestNG
  * execution</dd>
- * <dt>TestNG &lt;suite parallel="false|none"&gt; and Coseng Test JSON oneWebDriver
- * "false"</dt>
+ * <dt>TestNG &lt;suite parallel="false|none"&gt; and Coseng Test JSON
+ * oneWebDriver "false"</dt>
  * <dd>A web driver will be created at the start of the suite</dd>
  * <dd>It will persist across all tests and will be the only web driver for the
  * &lt;suite&gt; under test</dd>
@@ -133,12 +136,43 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     private synchronized void setCosengContext() throws CosengException {
         Thread thread = Thread.currentThread();
-        Test test = CosengRunner.getThreadTest(thread);
-        if (test != null) {
-            this.test = test;
+        Test threadTest = CosengRunner.getThreadTest(thread);
+        if (threadTest == null) {
+            /*
+             * No test-thread association. Copy current test for new thread and
+             * record for further thread use. NOTE! Cloned test is solely to
+             * identify the proper TestNG suite, test, class and methods under
+             * testing. Setting cloned fields will likely have no influence
+             * under TestNG's watch. Here when TestNG parallel mode is tests,
+             * classes or methods.
+             */
+            threadTest = cloneTest(test);
+            CosengRunner.addThreadTest(thread, threadTest);
+        }
+        if (threadTest != null) {
+            test = threadTest;
             isOneWebDriver = test.isOneWebDriver();
         } else {
             throw new CosengException("Unable to find a coseng test for this thread");
+        }
+    }
+
+    /**
+     * Sets the thread context. Called by the TestNG Execution, Suite, Test,
+     * Class and Method listeners to adjust the context names for each level.
+     *
+     * @return true, if successful
+     * @see com.sios.stc.coseng.run.CosengListener#setCosengContext()
+     * @since 2.1
+     * @version.coseng
+     */
+    private synchronized boolean setThreadContext() {
+        try {
+            setCosengContext();
+            return true;
+        } catch (CosengException e) {
+            test.setIsFailed(true);
+            return false;
         }
     }
 
@@ -173,9 +207,13 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
     public void onExecutionStart() {
         Thread thread = Thread.currentThread();
         test = CosengRunner.getThreadTest(thread);
-        xmlSuiteCount = test.getXmlSuites().size();
+        /*
+         * Don't use getXmlSuites().size() - it doesn't count the recursively
+         * occurring XmlSuite with <test>
+         */
+        xmlSuiteCount = test.getTestSuiteCount();
         log.debug(
-                "TestNG Executor BEORE; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}], xmlSuiteCount [{}]",
+                "TestNG Executor BEFORE; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}], xmlSuiteCount [{}]",
                 thread.getId(), test.getName(), parallelMode, isOneWebDriver, xmlSuiteCount);
         if (isOneWebDriver) {
             try {
@@ -201,7 +239,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
                 "Suite AFTER; suite [{}], thread [{}], test [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
                 arg0.getName(), thread.getId(), test.getName(), parallelMode, xmlSuiteCount,
                 isOneWebDriver);
-        if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount > 0) {
+        if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount >= 0) {
             try {
                 webDriverAction(WebDriverAction.STOP);
             } catch (CosengException e) {
@@ -235,12 +273,15 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
                 "Suite BEFORE; suite [{}], thread [{}], test [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
                 arg0.getName(), thread.getId(), test.getName(), parallelMode, xmlSuiteCount,
                 isOneWebDriver);
-        if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount > 0) {
-            try {
-                webDriverAction(WebDriverAction.START);
-            } catch (CosengException e) {
-                test.setIsFailed(true);
-                throw new RuntimeException(e);
+        if (setThreadContext()) {
+            test.setTestNgSuite(arg0.getName());
+            if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount >= 0) {
+                try {
+                    webDriverAction(WebDriverAction.START);
+                } catch (CosengException e) {
+                    test.setIsFailed(true);
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -277,12 +318,15 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
         Thread thread = Thread.currentThread();
         log.debug("Test BEFORE; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
                 thread.getId(), test.getName(), parallelMode, isOneWebDriver);
-        if (!isOneWebDriver && ParallelMode.TESTS.equals(parallelMode)) {
-            try {
-                webDriverAction(WebDriverAction.START);
-            } catch (CosengException e) {
-                test.setIsFailed(true);
-                throw new RuntimeException(e);
+        if (setThreadContext()) {
+            test.setTestNgTest(arg0.getName());
+            if (!isOneWebDriver && ParallelMode.TESTS.equals(parallelMode)) {
+                try {
+                    webDriverAction(WebDriverAction.START);
+                } catch (CosengException e) {
+                    test.setIsFailed(true);
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -376,12 +420,15 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
                 "Class BEFORE; class [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
                 arg0.getName(), Thread.currentThread().getId(), test.getName(), parallelMode,
                 isOneWebDriver);
-        if (!isOneWebDriver && ParallelMode.CLASSES.equals(parallelMode)) {
-            try {
-                webDriverAction(WebDriverAction.START);
-            } catch (CosengException e) {
-                test.setIsFailed(true);
-                throw new RuntimeException(e);
+        if (setThreadContext()) {
+            test.setTestNgClass(arg0.getName());
+            if (!isOneWebDriver && ParallelMode.CLASSES.equals(parallelMode)) {
+                try {
+                    webDriverAction(WebDriverAction.START);
+                } catch (CosengException e) {
+                    test.setIsFailed(true);
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -422,12 +469,15 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
                 "Method BEFORE; class [{}], method [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
                 arg0.getTestMethod().getRealClass().getName(), arg0.getTestMethod().getMethodName(),
                 Thread.currentThread().getId(), test.getName(), parallelMode, isOneWebDriver);
-        if (!isOneWebDriver && ParallelMode.METHODS.equals(parallelMode)) {
-            try {
-                webDriverAction(WebDriverAction.START);
-            } catch (CosengException e) {
-                test.setIsFailed(true);
-                throw new RuntimeException(e);
+        if (setThreadContext()) {
+            test.setTestNgMethod(arg0.getTestMethod().getMethodName());
+            if (!isOneWebDriver && ParallelMode.METHODS.equals(parallelMode)) {
+                try {
+                    webDriverAction(WebDriverAction.START);
+                } catch (CosengException e) {
+                    test.setIsFailed(true);
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -443,28 +493,52 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      *             the coseng exception
      * @see com.sios.stc.coseng.run.WebDriverLifecycle#startWebDriver(Test)
      * @see com.sios.stc.coseng.run.WebDriverLifecycle#stopWebDriver(Test)
-     * @see com.sios.stc.coseng.run.WebDriverToolbox
-     * @see com.sios.stc.coseng.run.CosengRunner
+     * @see com.sios.stc.coseng.run.CosengRunner#getWebDriver()
+     * @see com.sios.stc.coseng.run.CosengRunner#getWebDriverService()
      * @since 2.0
      * @version.coseng
      */
     private void webDriverAction(WebDriverAction action) throws CosengException {
-        WebDriverToolbox webDriverToolbox;
         Thread thread = Thread.currentThread();
         log.debug("Web driver action [{}], thread [{}]", action, thread.getId());
         if (WebDriverAction.START.equals(action)) {
-            webDriverToolbox = startWebDriver(test);
-            CosengRunner.setWebDriverToolbox(thread, webDriverToolbox);
+            startWebDriver(test);
+            CosengRunner.incrementStartedWebDriverCount();
             log.debug("Started Web driver [{}], thread [{}]",
-                    webDriverToolbox.getWebDriver().hashCode(), thread.getId());
+                    CosengRunner.getWebDriver(thread).hashCode(), thread.getId());
         } else if (WebDriverAction.STOP.equals(action)) {
-            if (CosengRunner.hasWebDriverToolbox(thread)) {
-                webDriverToolbox = CosengRunner.getWebDriverToolbox(thread);
-                stopWebDriver(webDriverToolbox);
+            if (CosengRunner.hasWebDriver(thread)) {
+                WebDriver webDriver = CosengRunner.getWebDriver(thread);
+                Object webDriverService = CosengRunner.getWebDriverService(thread);
+                stopWebDriver(webDriver, webDriverService);
                 CosengRunner.incrementStoppedWebDriverCount();
                 log.debug("Stopped web driver [{}], thread [{}]",
-                        webDriverToolbox.getWebDriver().hashCode(), thread.getId());
+                        CosengRunner.getWebDriver(thread).hashCode(), thread.getId());
             }
+        }
+    }
+
+    /**
+     * Clone test. Deep clone the original for making adjusting the later TestNG
+     * Suite, Test, Class and Method level names.
+     *
+     * @param original
+     *            the original
+     * @return the test
+     * @throws CosengException
+     *             the coseng exception
+     * @see com.sios.stc.coseng.run.CosengListener#setCosengContext()
+     * @since 2.1
+     * @version.coseng
+     */
+    private static Test cloneTest(Test original) throws CosengException {
+        String name = original.getName();
+        try {
+            Cloner cloner = new Cloner();
+            Test test = cloner.deepClone(original);
+            return test;
+        } catch (Exception e) {
+            throw new CosengException(Message.details(name, "error creating test clone"));
         }
     }
 

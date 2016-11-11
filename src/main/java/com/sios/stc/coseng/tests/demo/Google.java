@@ -30,32 +30,65 @@ import com.sios.stc.coseng.run.WebElement;
 
 public class Google extends CosengRunner {
 
-    private static final String ELEMENT_SEARCHFORM = "searchform";
-    private static final String URL                = "http://www.google.com";
-    private static final Logger log                = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
 
     @Test(description = "Verify connect to Google and search")
     public void connect1() throws CosengException {
+        String searchForm = "searchform";
+        String url = "http://www.google.com";
+        String redirectedUrl = "https://www.google.com";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
         WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+
+        /* Get the url and assure on correct route. */
+        webDriver.get(url);
+        Assert.assertTrue(currentUrlContains(redirectedUrl));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weSearchForm = newWebElement(By.id(searchForm));
+        weSearchForm.find();
+        Assert.assertTrue(weSearchForm.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("google-connect1");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
-    @Test(description = "Verify connect to Google and search")
+    @Test(description = "Verify connect to Google About and Carrers link")
     public void connect2() throws CosengException {
+        String carrers = "//*[@id=\"maia-footer-local\"]/div/ul/li[3]/a";
+        String url = "https://www.google.com/intl/en/about/";
+
+        /* Make sure a web driver for this thread */
         Assert.assertTrue(hasWebDriver(), "No web driver");
         WebDriver webDriver = getWebDriver();
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 webDriver.hashCode(), Thread.currentThread().getId());
-        WebElement searchForm = newWebElement(By.id(ELEMENT_SEARCHFORM));
-        webDriver.get(URL);
-        searchForm.find();
-        Assert.assertTrue(searchForm.isDisplayed());
+
+        /* Get the url and assure on correct route. */
+        webDriver.get(url);
+        Assert.assertTrue(currentUrlContains(url));
+
+        /* Get a COSENG WebElement object, find it and assure displayed */
+        WebElement weCarrers = newWebElement(By.xpath(carrers));
+        weCarrers.find();
+        Assert.assertTrue(weCarrers.isDisplayed());
+
+        /* Take a screenshot while were here */
+        saveScreenshot("google-connect2");
+
+        /* Find and save URLs on this route */
+        findUrls();
+        saveUrls();
+        // urlsAccessible();
     }
 
 }

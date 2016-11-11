@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Platform;
 import org.testng.xml.XmlSuite;
 
@@ -65,6 +66,12 @@ import com.sios.stc.coseng.run.Locations.Location;
  * {@value com.sios.stc.coseng.run.Browsers#BROWSER_VERSION_DEFAULT}</dd>
  * <dd>incognito: false (private/incognito for any supported browser)</dd>
  * <dd>acceptInvalidCerts: false</dd>
+ * <dd>angular2App: false</dd>
+ * <dd>allowFindUrl: false</dd>
+ * <dd>allowScreenshot: false</dd>
+ * <dd>browserWidth: null</dd>
+ * <dd>browserHeight: null</dd>
+ * <dd>browserMaximize: false</dd>
  * <dd>suites: []</dd>
  * <dd>baseUrl: null</dd>
  * <dd>gridUrl: null</dd>
@@ -80,33 +87,34 @@ public class Test {
 
     private static final int WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT     = 5;
     private static final int WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT = 5;
-    private static boolean   incognitoDefault                            = false;
-    private static boolean   acceptInvalidCertsDefault                   = false;
-    private static boolean   oneWebDriverDefault                         = false;
-    private List<XmlSuite>   xmlSuites                                   =
-            new ArrayList<XmlSuite>();
-    private String           reportDirectory                             = null;
-    private File             resourceDirectory                           = null;
-    private boolean          failed                                      = false;
-    private boolean          synthetic                                   = false;
-    private File             webDriver                                   = null;
+
+    private static boolean incognitoDefault          = false;
+    private static boolean acceptInvalidCertsDefault = false;
+    private static boolean oneWebDriverDefault       = false;
+    private static boolean angular2AppDefault        = false;
+    private static boolean allowFindUrlsDefault      = false;
+    private static boolean allowScreenshotsDefault   = false;
+    private static boolean browserMaximizeDefault    = false;
+    private List<XmlSuite> xmlSuites                 = new ArrayList<XmlSuite>();
+    private String         reportDirectory           = null;
+    private File           resourceDirectory         = null;
+    private boolean        failed                    = false;
+    private boolean        synthetic                 = false;
+    private File           webDriver                 = null;
+    private String         testNgSuite               = "";
+    private String         testNgTest                = "";
+    private String         testNgClass               = "";
+    private String         testNgMethod              = "";
+    private int            testSuiteCount            = 0;
 
     @Expose
     private String             name                        = null;
-    @Expose
-    private final Integer      verbosity                   = 0;
     @Expose
     private final Location     location                    = Location.NODE;
     @Expose
     private Platform           platform                    = Platform.ANY;
     @Expose
     private Browser            browser                     = Browser.ALL;
-    @Expose
-    private String             browserVersion              = Browsers.BROWSER_VERSION_DEFAULT;
-    @Expose
-    private final boolean      incognito                   = incognitoDefault;
-    @Expose
-    private final boolean      acceptInvalidCerts          = acceptInvalidCertsDefault;
     @Expose
     private final List<String> suites                      = new ArrayList<String>();
     @Expose
@@ -121,6 +129,26 @@ public class Test {
     @Expose
     private final Integer      webDriverWaitTimeoutSeconds =
             WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT;
+    @Expose
+    private String             browserVersion              = Browsers.BROWSER_VERSION_DEFAULT;
+    @Expose
+    private final boolean      incognito                   = incognitoDefault;
+    @Expose
+    private final boolean      acceptInvalidCerts          = acceptInvalidCertsDefault;
+    @Expose
+    private final boolean      angular2App                 = angular2AppDefault;
+    @Expose
+    private final boolean      allowFindUrls               = allowFindUrlsDefault;
+    @Expose
+    private final boolean      allowScreenshots            = allowScreenshotsDefault;
+    @Expose
+    private final Integer      browserWidth                = null;
+    @Expose
+    private final Integer      browserHeight               = null;
+    @Expose
+    private final boolean      browserMaximize             = browserMaximizeDefault;
+    @Expose
+    private final Integer      verbosity                   = 0;
 
     /**
      * Gets the test name.
@@ -530,6 +558,223 @@ public class Test {
         this.failed = failed;
     }
 
+    /**
+     * Gets the test ng suite.
+     *
+     * @return the test ng suite
+     * @see com.sios.stc.coseng.run.CosengListener#onStart(org.testng.ISuite)
+     * @since 2.1
+     * @version.coseng
+     */
+    public String getTestNgSuite() {
+        return this.testNgSuite;
+    }
+
+    /**
+     * Sets the test ng suite.
+     *
+     * @param suite
+     *            the new test ng suite
+     * @see com.sios.stc.coseng.run.CosengListener#onStart(org.testng.ISuite)
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setTestNgSuite(String suite) {
+        if (suite != null) {
+            this.testNgSuite = suite;
+        }
+    }
+
+    /**
+     * Gets the test ng test.
+     *
+     * @return the test ng test
+     * @see com.sios.stc.coseng.run.CosengListener#onStart(org.testng.ITestContext)
+     * @since 2.1
+     * @version.coseng
+     */
+    public String getTestNgTest() {
+        return this.testNgTest;
+    }
+
+    /**
+     * Sets the test ng test.
+     *
+     * @param test
+     *            the new test ng test
+     * @see com.sios.stc.coseng.run.CosengListener#onStart(org.testng.ITestContext)
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setTestNgTest(String test) {
+        if (test != null) {
+            this.testNgTest = test;
+        }
+    }
+
+    /**
+     * Gets the test ng class.
+     *
+     * @return the test ng class
+     * @see com.sios.stc.coseng.run.CosengListener#onBeforeClass(org.testng.ITestClass)
+     * @since 2.1
+     * @version.coseng
+     */
+    public String getTestNgClass() {
+        return this.testNgClass;
+    }
+
+    /**
+     * Sets the test ng class.
+     *
+     * @param clazz
+     *            the new test ng class
+     * @see com.sios.stc.coseng.run.CosengListener#onBeforeClass(org.testng.ITestClass)
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setTestNgClass(String clazz) {
+        if (clazz != null) {
+            this.testNgClass = clazz;
+        }
+    }
+
+    /**
+     * Gets the test ng method.
+     *
+     * @return the test ng method
+     * @see com.sios.stc.coseng.run.CosengListener#beforeInvocation(org.testng.IInvokedMethod,
+     *      org.testng.ITestResult)
+     * @since 2.1
+     * @version.coseng
+     */
+    public String getTestNgMethod() {
+        return this.testNgMethod;
+    }
+
+    /**
+     * Sets the test ng method.
+     *
+     * @param method
+     *            the new test ng method
+     * @see com.sios.stc.coseng.run.CosengListener#beforeInvocation(org.testng.IInvokedMethod,
+     *      org.testng.ITestResult)
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setTestNgMethod(String method) {
+        if (method != null) {
+            this.testNgMethod = method;
+        }
+    }
+
+    /**
+     * Checks if is angular app.
+     *
+     * @return true, if is angular app
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean isAngular2App() {
+        return angular2App;
+    }
+
+    /**
+     * Checks if is allow find urls.
+     *
+     * @return true, if is allow find urls
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean isAllowFindUrls() {
+        return allowFindUrls;
+    }
+
+    /**
+     * Checks if is allow screenshots.
+     *
+     * @return true, if is allow screenshots
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean isAllowScreenshots() {
+        return allowScreenshots;
+    }
+
+    /**
+     * Gets the test suite count. Differs from getXmlSuite().size() in that it
+     * counts all recursively occurring <suite-file> containing <test>.
+     *
+     * @return the suite count
+     * @since 2.1
+     * @version.coseng
+     */
+    protected int getTestSuiteCount() {
+        return testSuiteCount;
+    }
+
+    /**
+     * Sets the test suite count.
+     *
+     * @param suiteCount
+     *            the new suite count
+     * @since 2.1
+     * @version.coseng
+     */
+    protected void setTestSuiteCount(int suiteCount) {
+        this.testSuiteCount = suiteCount;
+    }
+
+    /**
+     * Gets the browser width.
+     *
+     * @return the browser width
+     * @since 2.1
+     * @version.coseng
+     */
+    protected Integer getBrowserWidth() {
+        return browserWidth;
+    }
+
+    /**
+     * Gets the browser height.
+     *
+     * @return the browser height
+     * @since 2.1
+     * @version.coseng
+     */
+    protected Integer getBrowserHeight() {
+        return browserHeight;
+    }
+
+    /**
+     * Gets the browser dimension.
+     *
+     * @return the browser dimension
+     * @since 2.1
+     * @version.coseng
+     */
+    public Dimension getBrowserDimension() {
+        Dimension browserDimension = null;
+        /* browserMaximize overrides width and height */
+        if (!browserMaximize && browserWidth != null && browserHeight != null && browserWidth > 0
+                && browserHeight > 0) {
+            browserDimension = new Dimension(browserWidth, browserHeight);
+        }
+        return browserDimension;
+    }
+
+    /**
+     * Gets the browser maximize.
+     *
+     * @return the browser maximize
+     * @since 2.1
+     * @version.coseng
+     */
+    protected boolean getBrowserMaximize() {
+        return browserMaximize;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -540,11 +785,13 @@ public class Test {
         return "name [" + name + "], location [" + location + "], baseUrl [" + baseUrl
                 + "], gridUrl [" + gridUrl + "], platform [" + platform + "], suites " + suites
                 + ", browser [" + browser + "], browserVersion [" + browserVersion + "] incognito ["
-                + incognito + "], acceptInvalidCerts [" + acceptInvalidCerts + "], oneWebDriver ["
-                + oneWebDriver + "], verbosity [" + verbosity + "], webDriver [" + webDriver
-                + "], webDriverTimeoutSeconds [" + webDriverTimeoutSeconds
-                + "], webDriverWaitTimeoutSeconds [" + webDriverWaitTimeoutSeconds
-                + "], reportDirectory [" + reportDirectory + "]";
+                + incognito + "], acceptInvalidCerts [" + acceptInvalidCerts + "], angular2App ["
+                + angular2App + "], allowFindUrls [" + allowFindUrls + "], allowScreenshots ["
+                + allowScreenshots + "], browserWidth [" + browserWidth + "], browserHeight ["
+                + browserHeight + "], browserMaximize [" + browserMaximize + "], oneWebDriver ["
+                + oneWebDriver + "], verbosity [" + verbosity + "], webDriverTimeoutSeconds ["
+                + webDriverTimeoutSeconds + "], webDriverWaitTimeoutSeconds ["
+                + webDriverWaitTimeoutSeconds + "], reportDirectory [" + reportDirectory + "]";
     }
 
 }

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jdom2.Attribute;
@@ -58,6 +59,7 @@ class Validate {
     private static final Logger log = LogManager.getLogger(RunTests.class.getName());
     private static Node         node;
     private static Tests        tests;
+    private static int          testSuiteCount;
 
     /**
      * Tests. Validates the node and test parameters for logical combinations
@@ -85,18 +87,20 @@ class Validate {
             Validate.node = node;
             Validate.tests = tests;
             notNull();
-            uniqueName();
             /*
              * Some tests will be identified as ANY/ALL. This implies multiple
              * COSENG tests against all supported Platform and Browsers. Create
              * explicit combinations for supported Platform and Browsers.
              */
             createExplicitTests();
+            uniqueName();
             /*
              * Validate node *first*; tests depends on their valid tests.
              */
             node();
             tests();
+            /* Set the max execution time */
+            tests.setMaxTestExecutionMinutes(node.getMaxTestExecutionMinutes());
         } else {
             throw new CosengException("Node null or 0 tests; nothing to do");
         }
@@ -242,12 +246,18 @@ class Validate {
      */
     private static Test newTest(Test original, Platform platform, Browser browser)
             throws CosengException {
-        String nameSeparator = "_";
+        String separator = "-";
         String name = original.getName();
+        ArrayList<String> newNames = new ArrayList<String>();
+        newNames.add(name);
+        newNames.add(original.getLocation().toString());
+        newNames.add(platform.toString());
+        newNames.add(browser.toString());
+        String newName = StringUtils.join(newNames, separator);
         Test test = cloneTest(original);
+        test.setName(newName.toLowerCase());
         test.setPlatform(platform);
         test.setBrowser(browser);
-        test.setName(name + nameSeparator + browser.toString().toLowerCase());
         test.setIsSynthetic(true);
         return test;
     }
@@ -294,6 +304,10 @@ class Validate {
             File resourcesTempDirectory = node.getResourcesTempDirectory();
             directory(reportsDirectory);
             directory(resourcesTempDirectory);
+            int maxTestExecutionMinutes = node.getMaxTestExecutionMinutes();
+            if (maxTestExecutionMinutes <= 0) {
+                throw new CosengException("Node maxTestExecutionMinutes invalid; must be > 0");
+            }
         }
     }
 
@@ -356,6 +370,7 @@ class Validate {
             resourceDirectory(test);
             suites(test);
             gridUrl(test);
+            browserDimension(test);
             verbosity(test);
             webDriverTimeout(test);
             webDriverWaitTimeout(test);
@@ -544,6 +559,8 @@ class Validate {
             throw new CosengException(
                     Message.details(name, "no suites provided; at least one suite XML REQUIRED"));
         } else {
+            /* Reset counter for next test */
+            testSuiteCount = 0;
             List<XmlSuite> xmlSuites = new ArrayList<XmlSuite>();
             XmlSuite xmlSuite = new XmlSuite();
             xmlSuite.setSuiteFiles(modifySuiteXml(name, test.getResourceDirectory(), suites,
@@ -551,6 +568,7 @@ class Validate {
             xmlSuite.setName(name);
             xmlSuites.add(xmlSuite);
             test.setXmlSuites(xmlSuites);
+            test.setTestSuiteCount(testSuiteCount);
         }
     }
 
@@ -608,13 +626,11 @@ class Validate {
     private static List<String> modifySuiteXml(String name, File resourceDirectory,
             List<String> suites, boolean isOneWebDriver) throws CosengException {
         List<String> modifiedSuites = new ArrayList<String>();
-        String attrName = "name";
         String attrParallel = "parallel";
-        String attrTest = "test";
         String attrSuiteFiles = "suite-files";
         String attrSuiteFile = "suite-file";
+        String attrTest = "test";
         String attrPath = "path";
-        String separator = "_";
         for (String suite : suites) {
             InputStream suiteInput = Resource.get(suite);
             /* Read original suite */
@@ -627,14 +643,8 @@ class Validate {
                 throw new CosengException(
                         Message.details(name, "deserialize suite [" + suite + "] failed"), e);
             }
-            /*
-             * Modify some elements to identify the COSENG name. Get 'suite'
-             * root and change name to be "cosengTestName_suiteName"
-             */
+            /* Check parallel mode */
             Element suiteRoot = jdomSuite.getRootElement();
-            Attribute suiteName = suiteRoot.getAttribute(attrName);
-            suiteName.setValue(name + separator + suiteName.getValue());
-            /* Check that parallel mode is valid */
             Attribute parallelMode = suiteRoot.getAttribute(attrParallel);
             if (parallelMode == null) {
                 throw new CosengException(
@@ -663,12 +673,14 @@ class Validate {
                 }
             }
             /*
-             * Get the 'test' children and change name to be
-             * "cosengTestName_TestName"
+             * Count <test> occurances; this is what determines a suite under
+             * test from a suite of <suite-files>. Only care that a <test>
+             * exists; not counting those. Used in suites(Test) for
+             * setSuiteCount which is in turn used in CosengListener.
              */
-            for (Element element : suiteRoot.getChildren(attrTest)) {
-                Attribute suiteTestName = element.getAttribute(attrName);
-                suiteTestName.setValue(name + separator + suiteTestName.getValue());
+            List<Element> tests = suiteRoot.getChildren(attrTest);
+            if (tests != null && !tests.isEmpty()) {
+                testSuiteCount++;
             }
             /* If suite-files modify each suite-file as well */
             for (Element element : suiteRoot.getChildren(attrSuiteFiles)) {
@@ -679,18 +691,18 @@ class Validate {
                     suiteFile.setValue(modifiedSuiteFiles.get(0));
                 }
             }
-            /*
-             * Save to temp resource directory; single COSENG JSON config with
-             * multiple tests could be using the same original suite XML file.
-             */
+            /* Save full relative path to temp resource directory */
+            String suitePath = Resource.getRelativePath(suite);
+            suitePath = resourceDirectory + File.separator + suitePath;
+            new File(suitePath).mkdirs();
+            suitePath = suitePath + Resource.getName(suite);
             XMLOutputter xout = new XMLOutputter(Format.getPrettyFormat());
-            String suitePath = resourceDirectory + File.separator + Resource.getName(suite);
             try {
                 // xout.output(jdomSuite, System.out);
                 OutputStream out = new FileOutputStream(suitePath);
                 xout.output(jdomSuite, out);
                 out.close();
-                // use temp suite file for populating xmlSuite
+                /* Use temp suite file for populating xmlSuite */
                 modifiedSuites.add(suitePath);
             } catch (IOException e) {
                 throw new CosengException(Message.details(name,
@@ -724,6 +736,26 @@ class Validate {
         if (Location.GRID.equals(location) && gridUrl == null) {
             throw new CosengException(Message.details(name,
                     "gridUrl not provided; location [" + location + "] REQUIRES valid gridUrl"));
+        }
+    }
+
+    /**
+     * Browser dimension.
+     *
+     * @param test
+     *            the test
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.1
+     * @version.coseng
+     */
+    private static void browserDimension(Test test) throws CosengException {
+        /* browserMaximize overrides width and height */
+        if (!test.getBrowserMaximize() && test.getBrowserDimension() == null) {
+            if (test.getBrowserWidth() != null || test.getBrowserHeight() != null) {
+                throw new CosengException(Message.details(test.getName(),
+                        "invalid browser width or height; both must be defined and > 0"));
+            }
         }
     }
 

@@ -5,6 +5,8 @@
             "location": "node",
             "browser": "all",
             "oneWebDriver": false,
+            "allowFindUrls": false,
+            "allowScreenshots": false,
             "suites": [
                 "coseng/suites/demo/tests.xml",
                 "coseng/suites/demo/classes.xml",

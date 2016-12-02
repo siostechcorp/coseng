@@ -19,7 +19,9 @@ package com.sios.stc.coseng.run;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
 
 /**
  * The Class WebElements holds the collection of
@@ -31,16 +33,19 @@ import org.openqa.selenium.NoSuchElementException;
 public class WebElements {
 
     private List<WebElement> webElements = new ArrayList<WebElement>();
+    // private org.openqa.selenium.WebElement webElement;
+    private WebDriver webDriver;
+    private By        by;
 
     /**
      * Instantiates a new web elements.
-     *
+     * 
      * @see com.sios.stc.coseng.run.WebElements#WebElements(List)
      * @since 2.0
      * @version.coseng
      */
     public WebElements() {
-        this(null);
+        // nothing to do
     }
 
     /**
@@ -59,6 +64,19 @@ public class WebElements {
     }
 
     /**
+     * Instantiates a new web elements. Creating with a By will fill with
+     * findElements() when findAll() is called.
+     *
+     * @param by
+     *            the by
+     * @since 2.2
+     * @version.coseng
+     */
+    public WebElements(By by) {
+        this.by = by;
+    }
+
+    /**
      * Adds to web elements. If web element is already contained in the
      * collection it will be removed and added.
      *
@@ -69,7 +87,7 @@ public class WebElements {
      * @version.coseng
      */
     public void add(WebElement webElement) {
-        if (webElement != null) {
+        if (by == null && webElement != null) {
             if (webElements.contains(webElement)) {
                 webElements.remove(webElement);
             } else {
@@ -97,6 +115,17 @@ public class WebElements {
     }
 
     /**
+     * Gets the by.
+     *
+     * @return the by
+     * @since 2.2
+     * @version.coseng
+     */
+    public By getBy() {
+        return by;
+    }
+
+    /**
      * Gets the collection of web elements.
      *
      * @return the list
@@ -118,9 +147,30 @@ public class WebElements {
      * @version.coseng
      */
     public void findAll() throws NoSuchElementException {
-        if (webElements != null && !webElements.isEmpty()) {
-            for (WebElement webElement : webElements) {
-                webElement.find();
+        if (by == null) {
+            if (webElements != null) {
+                for (WebElement webElement : webElements) {
+                    webElement.find();
+                }
+            }
+        } else {
+            webDriver = CosengRunner.getWebDriver();
+            if (webDriver != null) {
+                webElements = new ArrayList<WebElement>();
+                List<org.openqa.selenium.WebElement> seleniumWebElements =
+                        webDriver.findElements(by);
+                if (seleniumWebElements != null) {
+                    for (org.openqa.selenium.WebElement seleniumWebElement : seleniumWebElements) {
+                        WebElement webElement;
+                        try {
+                            webElement = new WebElement(seleniumWebElement);
+                            webElement.setBy(by);
+                            webElements.add(webElement);
+                        } catch (CosengException e) {
+                            throw new NoSuchElementException(e.getMessage());
+                        }
+                    }
+                }
             }
         }
     }

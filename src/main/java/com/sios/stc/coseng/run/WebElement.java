@@ -18,6 +18,8 @@ package com.sios.stc.coseng.run;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.interactions.Actions;
@@ -41,8 +43,10 @@ public class WebElement {
     public static final String ATTR_CLASS    = "class";
     public static final String ATTR_DISABLED = "disabled";
     public static final String ATTR_ENABLED  = "enabled";
+    public static final String ATTR_NG_HIDE  = "ng-hide";
 
-    private static final String            TAG_NAME_INPUT = "input";
+    private static final String            TAG_NAME_INPUT    = "input";
+    private static final String            TAG_NAME_TEXTAREA = "textarea";
     private org.openqa.selenium.WebElement webElement;
     private By                             by;
     private WebDriver                      webDriver;
@@ -61,6 +65,34 @@ public class WebElement {
      * @version.coseng
      */
     public WebElement(By by) throws CosengException {
+        setWebDrivers();
+        this.by = by;
+    }
+
+    /**
+     * Instantiates a new web element.
+     *
+     * @param webElement
+     *            the web element
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.2
+     * @version.coseng
+     */
+    public WebElement(org.openqa.selenium.WebElement webElement) throws CosengException {
+        setWebDrivers();
+        this.webElement = webElement;
+    }
+
+    /**
+     * Sets the web drivers.
+     *
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.2
+     * @version.coseng
+     */
+    private void setWebDrivers() throws CosengException {
         webDriver = CosengRunner.getWebDriver();
         webDriverWait = CosengRunner.getWebDriverWait();
         actions = CosengRunner.getActions();
@@ -68,7 +100,6 @@ public class WebElement {
         if (webDriver == null || webDriverWait == null || actions == null || jsExecutor == null) {
             throw new CosengException("Selenium tools corrupt; nothing to do");
         }
-        this.by = by;
     }
 
     /**
@@ -111,9 +142,11 @@ public class WebElement {
      * @since 2.0
      * @version.coseng
      */
-    public void find() {
-        if (by != null) {
+    public void find() throws NoSuchElementException {
+        if (webDriver != null && by != null) {
             webElement = webDriver.findElement(by);
+        } else {
+            throw new NoSuchElementException("webDriver or by null");
         }
     }
 
@@ -136,8 +169,7 @@ public class WebElement {
      * @version.coseng
      */
     public void clear() {
-        if (webElement != null && webElement.getTagName() != null
-                && webElement.getTagName().equals(TAG_NAME_INPUT)) {
+        if (isInput()) {
             webElement.clear();
         }
     }
@@ -185,6 +217,22 @@ public class WebElement {
     }
 
     /**
+     * Checks if is input.
+     *
+     * @return true, if is input
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean isInput() {
+        if (webElement != null && webElement.getTagName() != null
+                && (webElement.getTagName().equals(TAG_NAME_INPUT)
+                        || webElement.getTagName().equals(TAG_NAME_TEXTAREA))) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Checks if is enabled.
      *
      * @return true, if is enabled
@@ -192,6 +240,20 @@ public class WebElement {
      * @version.coseng
      */
     public boolean isEnabled() {
+        if (webElement != null) {
+            return webElement.isEnabled();
+        }
+        return false;
+    }
+
+    /**
+     * Checks if is disabled.
+     *
+     * @return true, if is disabled
+     * @since 2.1
+     * @version.coseng
+     */
+    public boolean isDisabled() {
         if (webElement != null) {
             return webElement.isEnabled();
         }
@@ -277,8 +339,13 @@ public class WebElement {
     private boolean textMatchBy(String text, MatchBy matchBy, boolean wait) {
         boolean matched = false;
         if (webElement != null) {
+            boolean isInput = false;
+            if (webElement.getTagName() != null && (webElement.getTagName().equals(TAG_NAME_INPUT)
+                    || webElement.getTagName().equals(TAG_NAME_TEXTAREA))) {
+                isInput = true;
+            }
             /* Courtesy wait until text present; if timeout will be false */
-            if (wait && text != null) {
+            if (!isInput && wait && text != null) {
                 try {
                     webDriverWait
                             .until(ExpectedConditions.textToBePresentInElement(webElement, text));
@@ -286,7 +353,12 @@ public class WebElement {
                     // do nothing; will be false
                 }
             }
-            String elementText = webElement.getText();
+            String elementText = null;
+            if (isInput) {
+                elementText = webElement.getAttribute("value");
+            } else {
+                elementText = webElement.getText();
+            }
             if (elementText != null) {
                 if (text == null && MatchBy.EMPTY.equals(matchBy)) {
                     if (elementText.isEmpty()) {
@@ -399,10 +471,6 @@ public class WebElement {
                     matched = true;
                 }
             }
-            Assert.assertTrue(matched,
-                    "Expected web element [" + webElement.getTagName() + "] attribute value ["
-                            + attributeValue + "] to " + matchBy.toString().toLowerCase() + " ["
-                            + value + "]");
         }
         return matched;
     }
@@ -418,6 +486,20 @@ public class WebElement {
     public void sendKeys(String string) {
         if (string != null && actions != null && webElement != null) {
             actions.moveToElement(webElement).sendKeys(webElement, string).build().perform();
+        }
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param key
+     *            the key
+     * @since 2.1
+     * @version.coseng
+     */
+    public void sendKeys(Keys key) {
+        if (key != null && actions != null && webElement != null) {
+            actions.moveToElement(webElement).sendKeys(webElement, key).build().perform();
         }
     }
 

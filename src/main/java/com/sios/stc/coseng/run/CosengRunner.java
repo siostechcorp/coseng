@@ -41,6 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -52,7 +53,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import com.paulhammant.ngwebdriver.NgWebDriver;
 import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
-import com.sios.stc.coseng.run.Locations.Location;
 import com.sios.stc.coseng.run.Matcher.MatchBy;
 import com.sios.stc.coseng.util.Http;
 import com.sios.stc.coseng.util.Resource;
@@ -104,7 +104,7 @@ public class CosengRunner {
     private Map<String, Set<String>> urlsRoutes = new HashMap<String, Set<String>>();
 
     /* Deprecated; supporting 2.0 */
-    private WebElements webElements = new WebElements();
+    private WebElements webElements = null;
 
     /**
      * Sets the selenium tools.
@@ -425,8 +425,40 @@ public class CosengRunner {
      */
     protected com.sios.stc.coseng.run.WebElement newWebElement(By by) throws CosengException {
         com.sios.stc.coseng.run.WebElement webElement = new com.sios.stc.coseng.run.WebElement(by);
+        if (webElements == null) {
+            webElements = new WebElements();
+        }
         webElements.add(webElement); // Deprecated; supporting 2.0
         return webElement;
+    }
+
+    /**
+     * New web elements.
+     *
+     * @return the web elements
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.2
+     * @version.coseng
+     */
+    protected WebElements newWebElements() throws CosengException {
+        return newWebElements(null);
+    }
+
+    /**
+     * New web elements.
+     *
+     * @param by
+     *            the by
+     * @return the web elements
+     * @throws CosengException
+     *             the coseng exception
+     * @since 2.2
+     * @version.coseng
+     */
+    protected WebElements newWebElements(By by) throws CosengException {
+        WebElements webElements = new WebElements(by);
+        return webElements;
     }
 
     /**
@@ -496,10 +528,11 @@ public class CosengRunner {
         NgWebDriver ngWebDriver = getNgWebDriver();
         if (test != null && webDriver != null && ngWebDriver != null) {
             if (test.isAngular2App()) {
-                if (Location.NODE.equals(test.getLocation())) {
-                    /* Local execution can outpace */
-                    pause(250L);
-                }
+                /*
+                 * Web driver outpaces (both node or grid); nor does using
+                 * ngWebDriver.waitForAngular2RequestsToFinish()
+                 */
+                pause(250l);
                 return ngWebDriver.getLocationAbsUrl();
             } else {
                 return webDriver.getCurrentUrl();
@@ -1094,6 +1127,21 @@ public class CosengRunner {
             }
         }
         return allUrlsAccessible;
+    }
+
+    /**
+     * Send keyboard.
+     *
+     * @param key
+     *            the key
+     * @since 2.2
+     * @version.coseng
+     */
+    public void sendKeyboard(Keys key) {
+        Actions actions = getActions();
+        if (actions != null) {
+            actions.sendKeys(key).build().perform();
+        }
     }
 
     /* Deprecated */

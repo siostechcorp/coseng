@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
  */
 package com.sios.stc.coseng.run;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,7 @@ import org.testng.ITestNGListener;
 import org.testng.TestNG;
 
 import com.sios.stc.coseng.RunTests;
+import com.sios.stc.coseng.integration.Integrator;
 
 /**
  * The Class Concurrent creates a runnable instance for a given COSENG test.
@@ -89,9 +91,33 @@ class Concurrent implements Runnable {
             stopWatch.stop();
             log.info("Test [{}] completed; elapsed time (hh:mm:ss:ms) [{}]", name,
                     stopWatch.toString());
+            notifyIntegrators(test, test.getReportDirectoryFile(), test.getResourceDirectory());
         } catch (Exception e) {
             test.setIsFailed(true);
             throw new RuntimeException("Unable to execute TestNG run for test [" + name + "]", e);
+        }
+    }
+
+    /**
+     * Notify integrators.
+     *
+     * @param test
+     *            the test
+     * @param reportDirectory
+     *            the report directory
+     * @param resourceDirectory
+     *            the resource directory
+     * @since 3.0
+     * @version.coseng
+     */
+    private void notifyIntegrators(Test test, File reportDirectory, File resourceDirectory) {
+        for (Integrator i : GetIntegrators.wired()) {
+            try {
+                i.attachReports(test, reportDirectory, resourceDirectory);
+            } catch (CosengException e) {
+                log.error("Unable to attach test reports [{}] for integrator [{}]",
+                        test.getReportDirectory(), i.getClass().getName());
+            }
         }
     }
 

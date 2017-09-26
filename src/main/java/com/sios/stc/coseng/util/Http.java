@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,17 @@ package com.sios.stc.coseng.util;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.lang3.time.StopWatch;
 
@@ -120,6 +129,7 @@ public class Http {
      * 
      * @link http://stackoverflow.com/questions/13778635/checking-status-of-website-in-java
      * @link http://stackexchange.com/users/347553/bhavik-ambani
+     * @link http://stackoverflow.com/questions/41692736/all-trusting-hostnameverifier-causes-ssl-errors-with-httpurlconnection
      * @link https://opensource.org/licenses/MIT
      * @author Bhavik Ambani
      * @author James B. Crocker
@@ -147,11 +157,41 @@ public class Http {
             if (changeUserAgent) {
                 System.setProperty(sysPropUserAgent, userAgentNew);
             }
+
+            /* Create trust manager for all certs */
+            TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                public void checkClientTrusted(java.security.cert.X509Certificate[] certs,
+                        String authType) {
+                }
+
+                public void checkServerTrusted(java.security.cert.X509Certificate[] certs,
+                        String authType) {
+                }
+            } };
+
+            /* Install the all-trusting trust manager */
+            try {
+                SSLContext sc = SSLContext.getInstance("SSL");
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            } catch (KeyManagementException | NoSuchAlgorithmException e1) {
+                // do nothing; will be 0
+            }
+
+            /* Don't verify host names */
+            HostnameVerifier hv = new HostnameVerifier() {
+                public boolean verify(String urlHostName, SSLSession session) {
+                    return true;
+                }
+            };
+            HttpsURLConnection.setDefaultHostnameVerifier(hv);
+
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
-            /* Accept any/all certs */
-            SSLUtilities.trustAllHostnames();
-            SSLUtilities.trustAllHttpsCertificates();
             do {
                 try {
                     HttpURLConnection connection =

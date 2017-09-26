@@ -1,0 +1,37 @@
+{
+   (required) "projectName": "<PROJECT NAME>",
+   (required) "sprintName": "<SPRINT NAME>",
+   (required) "instanceUrl": "https://www9.v1host.com/<YOUR INSTANCE>/",
+   (required) "accessToken": "<v1 APPLICATION ACCESS TOKEN>",
+   (required) "applicationName": "<v1 APPLICATION NAME>",
+   (required) "version": "1.0",
+   (required) "backlog": {
+        (optional) "titlePrefix": "COSENG: ",
+        (required) "fields": [
+            (required) { "attribute": "Status", "name": "StoryStatus", "value": "<yourStatus_start#>", "triggerOn": "executionStart" },
+            (required) { "attribute": "Status", "name": "StoryStatus", "value": "<yourStatus_finish#>", "triggerOn": "executionFinish" },
+            (optional[example]) { "attribute": "Source", "name": "StorySource", "value": "<your#>", "triggerOn": "executionStart" },
+            (optional[example]) { "attribute": "Custom_Category3", "name": "Custom_Category", "value": "112519", "triggerOn": "executionStart" }
+        ]
+    },
+    (required) "test": {
+        (required) "fields": [
+            (required) { "attribute": "Status", "name": "TestStatus", "value": "<yourStatus_start#>", "triggerOn": "methodStart" },
+            (required) { "attribute": "Status", "name": "TestStatus", "value": "<yourStatus_pass#>", "triggerOn": "methodPass" },
+            (required) { "attribute": "Status", "name": "TestStatus", "value": "<yourStatus_fail#>", "triggerOn": "methodFail" },
+            (optional[example]) { "attribute": "Custom_Category", "name": "Custom_Category", "value": "<your#>", "triggerOn": "methodStart" },
+            (optional[example]) { "attribute": "Custom_TestExecution", "name": "Custom_Test_Execution", "value": "<your#>", "triggerOn": "methodStart" },
+            (optional[example]) { "attribute": "Category", "name": "TestCategory", "value": "<your#>", "triggerOn": "methodStart" } (example)
+        ],
+        (optional) "paramFields": [Maps TestNG passed pramater name and value to VersionOne fields]
+            (optional[example]) { "name": "testCharge", "value": "positive", "fields": [
+                    { "attribute": "Custom_Scenario", "name": "Custom_Test_Scenario", "value": "<your#>", "triggerOn": "methodStart" }
+                ]
+            },
+            (optional[example]) { "name": "testCharge", "value": "negative", "fields": [
+                    { "attribute": "Custom_Scenario", "name": "Custom_Test_Scenario", "value": "<your#>", "triggerOn": "methodStart" }
+                ]
+            }
+        ]
+    }
+}

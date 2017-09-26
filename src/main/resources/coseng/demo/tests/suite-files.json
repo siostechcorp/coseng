@@ -7,10 +7,10 @@
             "oneWebDriver": false,
             "allowFindUrls": false,
             "allowScreenshots": true,
-            "webDriverTimeoutSeconds": 300,
-            "webDriverWaitTimeoutSeconds": 300,
+            "webDriverTimeoutSeconds": 30,
+            "webDriverWaitTimeoutSeconds": 30,
             "suites": [
-                "coseng/suites/demo/suite-files.xml"
+                "coseng/demo/suites/suite-files.xml"
             ]
         }
     ]

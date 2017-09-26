@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriverService;
-import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.firefox.GeckoDriverService;
 import org.openqa.selenium.ie.InternetExplorerDriver;
@@ -75,7 +75,7 @@ class WebDriverLifecycle {
             Location location = test.getLocation();
             Platform platform = test.getPlatform();
             Browser browser = test.getBrowser();
-            String browserVersion = test.getBrowserVersion();
+            String browserRequestVersion = test.getBrowserRequestVersion();
             File webDriverFile = test.getWebDriver();
             boolean isAcceptInvalidCerts = test.isAcceptInvalidCerts();
             boolean isIncognito = test.isIncognito();
@@ -92,24 +92,22 @@ class WebDriverLifecycle {
              * 'private' mode.
              */
             if (Browser.FIREFOX.equals(browser)) {
+                FirefoxOptions options = new FirefoxOptions();
                 FirefoxProfile profile = new FirefoxProfile();
                 DesiredCapabilities dc = DesiredCapabilities.firefox();
-                dc.setPlatform(platform);
-                dc.setVersion(browserVersion);
-                if (browserVersion != null && browserVersion.equals("48.0")) {
-                    dc.setCapability(FirefoxDriver.MARIONETTE, true);
+                if (!Platform.ANY.equals(platform)) {
+                    dc.setPlatform(platform);
+                }
+                if (!Browsers.BROWSER_VERSION_DEFAULT.equals(browserRequestVersion)) {
+                    dc.setVersion(browserRequestVersion);
                 }
                 if (isAcceptInvalidCerts) {
-                    /*
-                     * 2016-09-01 Doesn't work with FF 48. Can't do * gimick as
-                     * with IE since geckodriver will bomb before getting chance
-                     * to 'drive' thru // manually accepting the invalid certs.
-                     * (Awaiting upstream geckodriver fix). Till then import
-                     * cert into profile or add to browser.
-                     */
+                    dc.setCapability("acceptInsecureCerts", true);
                     profile.setAcceptUntrustedCertificates(true);
+                    profile.setAssumeUntrustedCertificateIssuer(false);
                 }
                 if (isIncognito) {
+                    options.addArguments("-private");
                     // Not the same as true "-private" mode
                     profile.setPreference("browser.privatebrowsing.autostart", true);
                     /*
@@ -121,14 +119,8 @@ class WebDriverLifecycle {
                 } else {
                     profile.setPreference("browser.privatebrowsing.autostart", false);
                 }
-                if (Platform.LINUX.equals(platform)) {
-                    /*
-                     * Explicitly enable native events(this is mandatory on
-                     * Linux system, since they are not enabled by default.
-                     */
-                    profile.setEnableNativeEvents(true);
-                }
-                dc.setCapability(FirefoxDriver.PROFILE, profile);
+                options.setProfile(profile);
+                options.addTo(dc);
                 if (Location.NODE.equals(location)) {
                     GeckoDriverService service = new GeckoDriverService.Builder()
                             .usingDriverExecutable(webDriverFile).usingAnyFreePort().build();
@@ -144,8 +136,17 @@ class WebDriverLifecycle {
             } else if (Browser.CHROME.equals(browser)) {
                 DesiredCapabilities dc = DesiredCapabilities.chrome();
                 ChromeOptions options = new ChromeOptions();
-                dc.setPlatform(platform);
-                dc.setVersion(browserVersion);
+                options.addArguments("--test-type");
+                options.addArguments("--disable-infobars");
+                if (test.getBrowserHeadless()) {
+                    options.addArguments("--headless");
+                }
+                if (!Platform.ANY.equals(platform)) {
+                    dc.setPlatform(platform);
+                }
+                if (!Browsers.BROWSER_VERSION_DEFAULT.equals(browserRequestVersion)) {
+                    dc.setVersion(browserRequestVersion);
+                }
                 if (isAcceptInvalidCerts) {
                     options.addArguments("--ignore-certificate-errors");
                 }
@@ -167,8 +168,12 @@ class WebDriverLifecycle {
                 }
             } else if (Browser.EDGE.equals(browser)) {
                 DesiredCapabilities dc = DesiredCapabilities.edge();
-                dc.setPlatform(platform);
-                dc.setVersion(browserVersion);
+                if (!Platform.ANY.equals(platform)) {
+                    dc.setPlatform(platform);
+                }
+                if (!Browsers.BROWSER_VERSION_DEFAULT.equals(browserRequestVersion)) {
+                    dc.setVersion(browserRequestVersion);
+                }
                 if (isAcceptInvalidCerts) {
                     dc.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
                 }
@@ -191,8 +196,12 @@ class WebDriverLifecycle {
                 }
             } else if (Browser.IE.equals(browser)) {
                 DesiredCapabilities dc = DesiredCapabilities.internetExplorer();
-                dc.setPlatform(platform);
-                dc.setVersion(browserVersion);
+                if (!Platform.ANY.equals(platform)) {
+                    dc.setPlatform(platform);
+                }
+                if (!Browsers.BROWSER_VERSION_DEFAULT.equals(browserRequestVersion)) {
+                    dc.setVersion(browserRequestVersion);
+                }
                 dc.setBrowserName(Browsers.BROWSER_NAME_INTERNET_EXPLORER);
                 if (isAcceptInvalidCerts) {
                     dc.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
@@ -264,8 +273,13 @@ class WebDriverLifecycle {
     protected static void stopWebDriver(WebDriver webDriver, Object webDriverService)
             throws CosengException {
         try {
-            webDriver.close();
+            /*
+             * Calls 'dispose()'; closes all browser windows and safely ends the
+             * session. Don't use 'close()'; it will close the window under
+             * focus but may cause timeouts when using Selenium GRID Hub
+             */
             webDriver.quit();
+            /* WebDriverService is for local/node instances */
             if (webDriverService != null) {
                 if (webDriverService instanceof ChromeDriverService) {
                     ((ChromeDriverService) webDriverService).stop();
@@ -278,7 +292,7 @@ class WebDriverLifecycle {
                 }
             }
         } catch (Exception e) {
-            throw new CosengException("Error stopping web driver");
+            throw new CosengException("Error stopping web driver", e);
         }
     }
 

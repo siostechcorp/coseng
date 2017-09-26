@@ -4,11 +4,11 @@
             "name": "demo",
             "location": "node",
             "browser": "all",
-            "oneWebDriver": true,
+            "oneWebDriver": false,
             "allowFindUrls": true,
             "allowScreenshots": true,
             "suites": [
-                "coseng/suites/demo/oneWebDriver.xml"
+                "coseng/demo/suites/methods.xml"
             ]
         }
     ]

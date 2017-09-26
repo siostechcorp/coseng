@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@ import org.openqa.selenium.By;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.CosengException;
 import com.sios.stc.coseng.run.CosengRunner;
 import com.sios.stc.coseng.run.WebElement;
 
 public class Ask extends CosengRunner {
 
-    private static final Logger log = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log = LogManager.getLogger(Ask.class.getName());
 
     @Test(description = "Verify connect to Ask and search")
     public void connect1() throws CosengException {
@@ -37,7 +36,7 @@ public class Ask extends CosengRunner {
         String searchform = "search-box";
 
         /* Make sure a web driver for this thread */
-        Assert.assertTrue(hasWebDriver(), "No web driver");
+        Assert.assertTrue(hasWebDriver(), "there should be a web driver");
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 getWebDriver().hashCode(), Thread.currentThread().getId());
 
@@ -46,19 +45,29 @@ public class Ask extends CosengRunner {
          * method. Can always get the web driver with WebDriver webDriver =
          * getWebDriver();
          */
+        logTestStep("navigating to url [" + url + "] and assuring search form available]");
         webDriverGet(url);
-        Assert.assertTrue(currentUrlContains(url));
+        logAssert.assertTrue(currentUrlContains(url), "current URL should contain [" + url + "]");
 
         /* Get a COSENG WebElement object, find it and assure displayed */
         WebElement weSearchForm = newWebElement(By.id(searchform));
         weSearchForm.find();
-        Assert.assertTrue(weSearchForm.isDisplayed());
+        logAssert.assertTrue(weSearchForm.isDisplayed(), "search form element should be displayed");
+
+        logAssert.assertEquals(false, false, "should be equal");
+        logAssert.assertNotEquals("aa", "bb", "should not be equals");
+        logAssert.assertNotNull("aa", "should not be null");
+        logAssert.assertNull(null, "should be null");
+        logAssert.assertFalse(false, "should be false");
 
         /* Take a screenshot while were here */
+        logMessage("saving screenshot [ask-connect1]");
         saveScreenshot("ask-connect1");
 
         /* Find and save URLs on this route */
+        logMessage("finding URLs");
         findUrls();
+        logMessage("saving URLs");
         saveUrls();
         // urlsAccessible();
 
@@ -70,7 +79,7 @@ public class Ask extends CosengRunner {
         String helpButton = "/html/body/section/aside/button";
 
         /* Make sure a web driver for this thread */
-        Assert.assertTrue(hasWebDriver(), "No web driver");
+        Assert.assertTrue(hasWebDriver(), "there should be an available webdriver");
         log.debug("Test [{}], web driver [{}], thread [{}]", getTest().getName(),
                 getWebDriver().hashCode(), Thread.currentThread().getId());
 
@@ -79,19 +88,23 @@ public class Ask extends CosengRunner {
          * method. Can always get the web driver with WebDriver webDriver =
          * getWebDriver();
          */
+        logTestStep("navigating to url [" + url + "] and assuring help button available");
         webDriverGet(url);
-        Assert.assertTrue(currentUrlContains(url));
+        logAssert.assertTrue(currentUrlContains(url), "current URL should contain [" + url + "]");
 
         /* Get a COSENG WebElement object, find it and assure displayed */
         WebElement weHelpButton = newWebElement(By.xpath(helpButton));
         weHelpButton.find();
-        Assert.assertTrue(weHelpButton.isDisplayed());
+        logAssert.assertTrue(weHelpButton.isDisplayed(), "help button should be displayed");
 
         /* Take a screenshot while were here */
+        logMessage("saving screenshot [ask-connect2]");
         saveScreenshot("ask-connect2");
 
         /* Find and save URLs on this route */
+        logMessage("finding URLs");
         findUrls();
+        logMessage("saving URLs");
         saveUrls();
         // urlsAccessible();
     }

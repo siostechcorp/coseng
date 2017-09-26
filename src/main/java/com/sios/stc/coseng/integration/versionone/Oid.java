@@ -14,43 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sios.stc.coseng.run;
+package com.sios.stc.coseng.integration.versionone;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+import com.sios.stc.coseng.Common;
 
 /**
- * The Class Locations defines the execution of Selenium tests; either locally
- * with {@code NODE} or via the Selenium GRID Hub with {@code GRID}.
+ * The Class Oid.
  *
- * @since 2.0
+ * @since 3.0
  * @version.coseng
  */
-class Locations {
+public class Oid {
+
+    @SerializedName("_oid")
+    @Expose
+    private final String oid = null;
 
     /**
-     * The Enum Location.
+     * Gets the id.
      *
-     * @since 2.0
+     * @return the id
+     * @since 3.0
      * @version.coseng
      */
-    protected static enum Location {
-        NODE, GRID
-    };
-
-    /**
-     * Gets the list of location values.
-     *
-     * @return the list
-     * @since 2.0
-     * @version.coseng
-     */
-    protected static List<String> get() {
-        List<String> locations = new ArrayList<String>();
-        for (Location location : Location.values()) {
-            locations.add(location.toString());
+    public String getId() {
+        if (oid != null) {
+            return oid;
         }
-        return locations;
+        return Common.STRING_EMPTY;
     }
 
 }

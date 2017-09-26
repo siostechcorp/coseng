@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.sios.stc.coseng.run;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -30,7 +31,7 @@ import org.openqa.selenium.WebDriver;
  * @since 2.0
  * @version.coseng
  */
-public class WebElements {
+public class WebElements implements Iterable<WebElement> {
 
     private List<WebElement> webElements = new ArrayList<WebElement>();
     // private org.openqa.selenium.WebElement webElement;
@@ -87,12 +88,8 @@ public class WebElements {
      * @version.coseng
      */
     public void add(WebElement webElement) {
-        if (by == null && webElement != null) {
-            if (webElements.contains(webElement)) {
-                webElements.remove(webElement);
-            } else {
-                webElements.add(webElement);
-            }
+        if (webElement != null && !webElements.contains(webElement)) {
+            webElements.add(webElement);
         }
     }
 
@@ -138,6 +135,19 @@ public class WebElements {
     }
 
     /**
+     * Gets the.
+     *
+     * @param index
+     *            the index
+     * @return the web element
+     * @since 3.0
+     * @version.coseng
+     */
+    public WebElement get(int index) {
+        return webElements.get(index);
+    }
+
+    /**
      * Find all web element.
      *
      * @throws NoSuchElementException
@@ -146,33 +156,67 @@ public class WebElements {
      * @since 2.0
      * @version.coseng
      */
-    public void findAll() throws NoSuchElementException {
+    public boolean findAll() {
         if (by == null) {
-            if (webElements != null) {
-                for (WebElement webElement : webElements) {
-                    webElement.find();
+            for (WebElement webElement : webElements) {
+                if (!webElement.find()) {
+                    return false;
                 }
             }
+            return true;
         } else {
             webDriver = CosengRunner.getWebDriver();
             if (webDriver != null) {
+                /*
+                 * MUST create empty web elements; otherwise the collection just
+                 * grows containing previous - and now stale - web elements.
+                 */
                 webElements = new ArrayList<WebElement>();
                 List<org.openqa.selenium.WebElement> seleniumWebElements =
                         webDriver.findElements(by);
                 if (seleniumWebElements != null) {
                     for (org.openqa.selenium.WebElement seleniumWebElement : seleniumWebElements) {
-                        WebElement webElement;
                         try {
-                            webElement = new WebElement(seleniumWebElement);
-                            webElement.setBy(by);
+                            WebElement webElement = new WebElement(seleniumWebElement);
+                            /*
+                             * DO NOT SET WEB ELEMENT "BY"! If a find()
+                             * attempted on the web element elsewhere, the
+                             * expected value will likely not be returned if it
+                             * exists. A By used for newWebElements(By) will
+                             * almost certainly be a globbed xpath or similar.
+                             * The consequence is that to prevent stale elements
+                             * findAll() must be re-executed on DOM changes.
+                             */
                             webElements.add(webElement);
                         } catch (CosengException e) {
-                            throw new NoSuchElementException(e.getMessage());
+                            return false;
                         }
                     }
+                    return true;
                 }
+
             }
         }
+        return false;
+    }
+
+    /**
+     * All visible.
+     *
+     * @return true, if successful
+     * @since 3.0
+     * @version.coseng
+     */
+    public boolean allVisible() {
+        if (!findAll()) {
+            return false;
+        }
+        for (WebElement webElement : webElements) {
+            if (!webElement.isDisplayed()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -183,7 +227,7 @@ public class WebElements {
      * @version.coseng
      */
     public void clearAll() {
-        if (webElements != null && !webElements.isEmpty()) {
+        if (!webElements.isEmpty()) {
             for (WebElement webElement : webElements) {
                 if (webElement != null) {
                     webElement.clear();
@@ -200,6 +244,29 @@ public class WebElements {
      */
     public void removeAll() {
         webElements = new ArrayList<WebElement>();
+    }
+
+    /**
+     * Iterator.
+     *
+     * @return the iterator
+     * @since 3.0
+     * @version.coseng
+     */
+    @Override
+    public Iterator<WebElement> iterator() {
+        return webElements.iterator();
+    }
+
+    /**
+     * Size.
+     *
+     * @return the int
+     * @since 3.0
+     * @version.coseng
+     */
+    public int size() {
+        return webElements.size();
     }
 
 }

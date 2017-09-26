@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,21 @@
  */
 package com.sios.stc.coseng.run;
 
+import java.util.function.Function;
+
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.Assert;
 
+import com.paulhammant.ngwebdriver.NgWebDriver;
 import com.sios.stc.coseng.run.Matcher.MatchBy;
 
 /**
@@ -40,19 +44,19 @@ import com.sios.stc.coseng.run.Matcher.MatchBy;
 public class WebElement {
 
     // common DOM attributes and values
-    public static final String ATTR_CLASS    = "class";
-    public static final String ATTR_DISABLED = "disabled";
-    public static final String ATTR_ENABLED  = "enabled";
-    public static final String ATTR_NG_HIDE  = "ng-hide";
+    public static final String ATTR_INPUT_VALUE = "value";
 
     private static final String            TAG_NAME_INPUT    = "input";
     private static final String            TAG_NAME_TEXTAREA = "textarea";
+    private static final String            BY_CSS_SELECTOR   = "By.cssSelector: ";
     private org.openqa.selenium.WebElement webElement;
     private By                             by;
     private WebDriver                      webDriver;
     private WebDriverWait                  webDriverWait;
+    private NgWebDriver                    ngWebDriver;
     private Actions                        actions;
     private JavascriptExecutor             jsExecutor;
+    private Test                           test;
 
     /**
      * Instantiates a new web element.
@@ -65,8 +69,10 @@ public class WebElement {
      * @version.coseng
      */
     public WebElement(By by) throws CosengException {
-        setWebDrivers();
-        this.by = by;
+        if (by != null) {
+            setWebDrivers();
+            this.by = by;
+        }
     }
 
     /**
@@ -80,8 +86,10 @@ public class WebElement {
      * @version.coseng
      */
     public WebElement(org.openqa.selenium.WebElement webElement) throws CosengException {
-        setWebDrivers();
-        this.webElement = webElement;
+        if (webElement != null) {
+            setWebDrivers();
+            this.webElement = webElement;
+        }
     }
 
     /**
@@ -95,9 +103,12 @@ public class WebElement {
     private void setWebDrivers() throws CosengException {
         webDriver = CosengRunner.getWebDriver();
         webDriverWait = CosengRunner.getWebDriverWait();
+        ngWebDriver = CosengRunner.getNgWebDriver();
         actions = CosengRunner.getActions();
         jsExecutor = CosengRunner.getJavascriptExecutor();
-        if (webDriver == null || webDriverWait == null || actions == null || jsExecutor == null) {
+        test = CosengRunner.getTest();
+        if (webDriver == null || webDriverWait == null || ngWebDriver == null || actions == null
+                || jsExecutor == null || test == null) {
             throw new CosengException("Selenium tools corrupt; nothing to do");
         }
     }
@@ -133,7 +144,9 @@ public class WebElement {
      * @version.coseng
      */
     public void setBy(By by) {
-        this.by = by;
+        if (by != null) {
+            this.by = by;
+        }
     }
 
     /**
@@ -142,12 +155,19 @@ public class WebElement {
      * @since 2.0
      * @version.coseng
      */
-    public void find() throws NoSuchElementException {
+    public boolean find() {
         if (webDriver != null && by != null) {
-            webElement = webDriver.findElement(by);
-        } else {
-            throw new NoSuchElementException("webDriver or by null");
+            try {
+                if (test.isAngular2App()) {
+                    ngWebDriver.waitForAngular2RequestsToFinish();
+                }
+                webElement = webDriver.findElement(by);
+                return true;
+            } catch (NoSuchElementException e) {
+                // do nothing
+            }
         }
+        return false;
     }
 
     /**
@@ -158,8 +178,28 @@ public class WebElement {
      */
     public void click() {
         if (webElement != null) {
+            if (test.isAngular2App()) {
+                ngWebDriver.waitForAngular2RequestsToFinish();
+            }
             actions.moveToElement(webElement).click().build().perform();
         }
+    }
+
+    /**
+     * Gets the css selector.
+     *
+     * @return the css selector
+     * @since 2.0
+     * @version.coseng
+     */
+    public String getCssSelector() {
+        String cssSelector = null;
+        if (by != null) {
+            if (by instanceof By.ByCssSelector) {
+                cssSelector = StringUtils.substringAfter(by.toString(), BY_CSS_SELECTOR);
+            }
+        }
+        return cssSelector;
     }
 
     /**
@@ -211,7 +251,11 @@ public class WebElement {
      */
     public boolean isDisplayed() {
         if (webElement != null) {
-            return webElement.isDisplayed();
+            try {
+                return webElement.isDisplayed();
+            } catch (StaleElementReferenceException e1) {
+                /* Web element removed from DOM */
+            }
         }
         return false;
     }
@@ -240,20 +284,6 @@ public class WebElement {
      * @version.coseng
      */
     public boolean isEnabled() {
-        if (webElement != null) {
-            return webElement.isEnabled();
-        }
-        return false;
-    }
-
-    /**
-     * Checks if is disabled.
-     *
-     * @return true, if is disabled
-     * @since 2.1
-     * @version.coseng
-     */
-    public boolean isDisabled() {
         if (webElement != null) {
             return webElement.isEnabled();
         }
@@ -339,26 +369,19 @@ public class WebElement {
     private boolean textMatchBy(String text, MatchBy matchBy, boolean wait) {
         boolean matched = false;
         if (webElement != null) {
-            boolean isInput = false;
-            if (webElement.getTagName() != null && (webElement.getTagName().equals(TAG_NAME_INPUT)
-                    || webElement.getTagName().equals(TAG_NAME_TEXTAREA))) {
-                isInput = true;
+            if (test.isAngular2App()) {
+                ngWebDriver.waitForAngularRequestsToFinish();
             }
             /* Courtesy wait until text present; if timeout will be false */
-            if (!isInput && wait && text != null) {
+            if (!isInput() && wait && text != null) {
                 try {
-                    webDriverWait
-                            .until(ExpectedConditions.textToBePresentInElement(webElement, text));
+                    webDriverWait.until((Function<? super WebDriver, Boolean>) ExpectedConditions
+                            .textToBePresentInElement(webElement, text));
                 } catch (TimeoutException e) {
                     // do nothing; will be false
                 }
             }
-            String elementText = null;
-            if (isInput) {
-                elementText = webElement.getAttribute("value");
-            } else {
-                elementText = webElement.getText();
-            }
+            String elementText = getText();
             if (elementText != null) {
                 if (text == null && MatchBy.EMPTY.equals(matchBy)) {
                     if (elementText.isEmpty()) {
@@ -375,16 +398,6 @@ public class WebElement {
                     }
                 }
             }
-            if (!MatchBy.EMPTY.equals(matchBy)) {
-                Assert.assertTrue(matched,
-                        "Expected web element [" + webElement.getTagName() + "] text ["
-                                + elementText + "] to " + matchBy.toString().toLowerCase() + " ["
-                                + text + "]");
-            } else {
-                Assert.assertTrue(matched,
-                        "Expected web element [" + webElement.getTagName() + "] text to be "
-                                + matchBy.toString().toLowerCase() + "; got [" + elementText + "]");
-            }
         }
         return matched;
     }
@@ -397,7 +410,9 @@ public class WebElement {
      */
     public void waitUntilVisible() {
         if (webElement != null) {
-            webDriverWait.until(ExpectedConditions.visibilityOf(webElement));
+            webDriverWait.until(
+                    (Function<? super WebDriver, org.openqa.selenium.WebElement>) ExpectedConditions
+                            .visibilityOf(webElement));
         }
     }
 
@@ -409,7 +424,8 @@ public class WebElement {
      */
     public void waitUntilInvisible() {
         if (this.getBy() != null) {
-            webDriverWait.until(ExpectedConditions.invisibilityOfElementLocated(this.getBy()));
+            webDriverWait.until((Function<? super WebDriver, Boolean>) ExpectedConditions
+                    .invisibilityOfElementLocated(this.getBy()));
         }
     }
 
@@ -484,9 +500,51 @@ public class WebElement {
      * @version.coseng
      */
     public void sendKeys(String string) {
-        if (string != null && actions != null && webElement != null) {
-            actions.moveToElement(webElement).sendKeys(webElement, string).build().perform();
-        }
+        sendKeys(string, null, -1, false);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param string
+     *            the string
+     * @param pauseMs
+     *            the pause ms
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(String string, long pauseMs) {
+        sendKeys(string, null, pauseMs, false);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param string
+     *            the string
+     * @param click
+     *            the click
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(String string, boolean click) {
+        sendKeys(string, null, -1, click);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param string
+     *            the string
+     * @param click
+     *            the click
+     * @param pauseMs
+     *            the pause ms
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(String string, boolean click, long pauseMs) {
+        sendKeys(string, null, pauseMs, click);
     }
 
     /**
@@ -498,8 +556,106 @@ public class WebElement {
      * @version.coseng
      */
     public void sendKeys(Keys key) {
-        if (key != null && actions != null && webElement != null) {
-            actions.moveToElement(webElement).sendKeys(webElement, key).build().perform();
+        sendKeys(null, key, -1, false);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param key
+     *            the key
+     * @param pauseMs
+     *            the pause ms
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(Keys key, long pauseMs) {
+        sendKeys(null, key, pauseMs, false);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param key
+     *            the key
+     * @param click
+     *            the click
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(Keys key, boolean click) {
+        sendKeys(null, key, -1, click);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param key
+     *            the key
+     * @param click
+     *            the click
+     * @param pauseMs
+     *            the pause ms
+     * @since 3.0
+     * @version.coseng
+     */
+    public void sendKeys(Keys key, boolean click, long pauseMs) {
+        sendKeys(null, key, pauseMs, click);
+    }
+
+    /**
+     * Send keys.
+     *
+     * @param string
+     *            the string
+     * @param key
+     *            the key
+     * @since 3.0
+     * @version.coseng
+     */
+    @SuppressWarnings("deprecation")
+    private void sendKeys(String string, Keys key, long pauseMs, boolean click) {
+        if (actions != null && webElement != null) {
+            CharSequence sendKey = null;
+            if (string != null) {
+                sendKey = string;
+            } else if (key != null) {
+                sendKey = key;
+            }
+            if (sendKey != null) {
+                if (test.isAngular2App()) {
+                    ngWebDriver.waitForAngular2RequestsToFinish();
+                }
+                if (pauseMs > 0) {
+                    /*
+                     * As of 2016-12-21 The Microsoft Edge and IE web driver are
+                     * spoty at best for reliable key entry into an input field.
+                     * Sometimes the whole expected value is entered. Other
+                     * times random partial elements of the value are entered.
+                     * 
+                     * Note! I'm purposely using the deprecated pause() method
+                     * as it works well and avoids other kludgy timing efforts
+                     * (that didn't perform 100%). Attempts to use Javascript or
+                     * other means did not prove fruitful. Suggest 500l for Edge
+                     * and 275l for IE.
+                     */
+                    if (click) {
+                        actions.moveToElement(webElement).click(webElement).pause(pauseMs)
+                                .sendKeys(webElement, sendKey).build().perform();
+                    } else {
+                        actions.moveToElement(webElement).pause(pauseMs)
+                                .sendKeys(webElement, sendKey).build().perform();
+                    }
+                } else {
+                    if (click) {
+                        actions.moveToElement(webElement).click(webElement)
+                                .sendKeys(webElement, sendKey).build().perform();
+                    } else {
+                        actions.moveToElement(webElement).sendKeys(webElement, sendKey).build()
+                                .perform();
+                    }
+                }
+            }
         }
     }
 
@@ -524,6 +680,34 @@ public class WebElement {
      */
     public String getRgbaBackgroundColor() {
         return this.get().getCssValue("background-color");
+    }
+
+    /**
+     * Gets the text.
+     *
+     * @return the text
+     * @since 3.0
+     * @version.coseng
+     */
+    public String getText() {
+        if (test.isAngular2App()) {
+            ngWebDriver.waitForAngular2RequestsToFinish();
+        }
+        if (isInput()) {
+            return webElement.getAttribute(ATTR_INPUT_VALUE);
+        }
+        return webElement.getText();
+    }
+
+    /**
+     * Checks if is selected.
+     *
+     * @return true, if is selected
+     * @since 3.0
+     * @version.coseng
+     */
+    public boolean isSelected() {
+        return webElement.isSelected();
     }
 
 }

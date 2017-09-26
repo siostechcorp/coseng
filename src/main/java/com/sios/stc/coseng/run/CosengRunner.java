@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Capabilities;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.OutputType;
@@ -49,9 +50,15 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Reporter;
+import org.testng.asserts.Assertion;
+import org.testng.asserts.IAssert;
+import org.testng.asserts.SoftAssert;
 
 import com.paulhammant.ngwebdriver.NgWebDriver;
+import com.sios.stc.coseng.Common;
 import com.sios.stc.coseng.RunTests;
+import com.sios.stc.coseng.integration.Integrator;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Matcher.MatchBy;
 import com.sios.stc.coseng.util.Http;
@@ -72,26 +79,31 @@ import com.sios.stc.coseng.util.Resource;
  */
 public class CosengRunner {
 
-    private static final Logger                    log                    =
+    protected LogAssert logAssert = new LogAssert();
+
+    private static final Logger                         log                    =
             LogManager.getLogger(RunTests.class.getName());
-    private static final String                    DIR_SCREENSHOTS        = "coseng-screenshots";
-    private static final String                    DIR_ADDITIONAL_REPORTS = "coseng-reports";
-    private static int                             startedWebDriver       = 0;
-    private static int                             stoppedWebDriver       = 0;
-    private static Map<Thread, Test>               threadTest             =
+    private static final String                         DIR_SCREENSHOTS        =
+            "coseng-screenshots";
+    private static final String                         DIR_ADDITIONAL_REPORTS = "coseng-reports";
+    private static int                                  startedWebDriver       = 0;
+    private static int                                  stoppedWebDriver       = 0;
+    private static Map<Thread, Test>                    threadTest             =
             new HashMap<Thread, Test>();
-    private static Map<Thread, WebDriver>          threadWebDriver        =
+    private static Map<Thread, WebDriver>               threadWebDriver        =
             new HashMap<Thread, WebDriver>();
-    private static Map<Thread, Object>             threadWebDriverService =
+    private static Map<Thread, Object>                  threadWebDriverService =
             new HashMap<Thread, Object>();
-    private static Map<Thread, WebDriverWait>      threadWebDriverWait    =
+    private static Map<Thread, WebDriverWait>           threadWebDriverWait    =
             new HashMap<Thread, WebDriverWait>();
-    private static Map<Thread, Actions>            threadActions          =
+    private static Map<Thread, Actions>                 threadActions          =
             new HashMap<Thread, Actions>();
-    private static Map<Thread, JavascriptExecutor> threadJsExecutor       =
+    private static Map<Thread, JavascriptExecutor>      threadJsExecutor       =
             new HashMap<Thread, JavascriptExecutor>();
-    private static Map<Thread, NgWebDriver>        threadNgWebDriver      =
+    private static Map<Thread, NgWebDriver>             threadNgWebDriver      =
             new HashMap<Thread, NgWebDriver>();
+    private static final org.apache.logging.log4j.Level defaultLogLevel        =
+            org.apache.logging.log4j.Level.INFO;
 
     /* Global collection of found URLs */
     private static Map<String, String>      allUrlsTag    = new HashMap<String, String>();
@@ -103,8 +115,7 @@ public class CosengRunner {
     private Map<String, String>      urlsTag    = new HashMap<String, String>();
     private Map<String, Set<String>> urlsRoutes = new HashMap<String, Set<String>>();
 
-    /* Deprecated; supporting 2.0 */
-    private WebElements webElements = null;
+    private static int assertFailureCount = 0;
 
     /**
      * Sets the selenium tools.
@@ -277,6 +288,19 @@ public class CosengRunner {
     }
 
     /**
+     * Gets the browser version.
+     *
+     * @return the browser version
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static synchronized String getBrowserVersion() {
+        WebDriver wd = getWebDriver();
+        Capabilities caps = ((RemoteWebDriver) wd).getCapabilities();
+        return caps.getVersion();
+    }
+
+    /**
      * Gets the started web driver.
      *
      * @return the web driver
@@ -406,7 +430,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected com.sios.stc.coseng.run.WebElement newWebElement() throws CosengException {
+    protected static com.sios.stc.coseng.run.WebElement newWebElement() throws CosengException {
         return newWebElement(null);
     }
 
@@ -423,13 +447,9 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected com.sios.stc.coseng.run.WebElement newWebElement(By by) throws CosengException {
-        com.sios.stc.coseng.run.WebElement webElement = new com.sios.stc.coseng.run.WebElement(by);
-        if (webElements == null) {
-            webElements = new WebElements();
-        }
-        webElements.add(webElement); // Deprecated; supporting 2.0
-        return webElement;
+    protected static com.sios.stc.coseng.run.WebElement newWebElement(By by)
+            throws CosengException {
+        return new com.sios.stc.coseng.run.WebElement(by);
     }
 
     /**
@@ -441,7 +461,7 @@ public class CosengRunner {
      * @since 2.2
      * @version.coseng
      */
-    protected WebElements newWebElements() throws CosengException {
+    protected static WebElements newWebElements() throws CosengException {
         return newWebElements(null);
     }
 
@@ -456,9 +476,8 @@ public class CosengRunner {
      * @since 2.2
      * @version.coseng
      */
-    protected WebElements newWebElements(By by) throws CosengException {
-        WebElements webElements = new WebElements(by);
-        return webElements;
+    protected static WebElements newWebElements(By by) throws CosengException {
+        return new WebElements(by);
     }
 
     /**
@@ -522,18 +541,26 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected String getCurrentUrl() {
+    protected static String getCurrentUrl() {
         Test test = getTest();
         WebDriver webDriver = getWebDriver();
         NgWebDriver ngWebDriver = getNgWebDriver();
         if (test != null && webDriver != null && ngWebDriver != null) {
             if (test.isAngular2App()) {
-                /*
-                 * Web driver outpaces (both node or grid); nor does using
-                 * ngWebDriver.waitForAngular2RequestsToFinish()
-                 */
-                pause(250l);
-                return ngWebDriver.getLocationAbsUrl();
+                try {
+                    /*
+                     * Web driver outpaces (both node or grid); nor does using
+                     * ngWebDriver.waitForAngular2RequestsToFinish()
+                     */
+                    ngWebDriver.waitForAngular2RequestsToFinish();
+                    pause(350l);
+                    return ngWebDriver.getLocationAbsUrl();
+                } catch (Exception e) {
+                    /*
+                     * May be at about:blank or on non-angular page; best effort
+                     */
+                    return webDriver.getCurrentUrl();
+                }
             } else {
                 return webDriver.getCurrentUrl();
             }
@@ -547,12 +574,11 @@ public class CosengRunner {
      * @param route
      *            the route
      * @return true, if successful
-     * @see com.sios.stc.coseng.run.CosengRunner#currentUrlMatchBy(String,
-     *      MatchBy)
+     * @see #currentUrlMatchBy(String, MatchBy)
      * @since 2.1
      * @version.coseng
      */
-    protected boolean currentUrlContains(String route) {
+    protected static boolean currentUrlContains(String route) {
         return currentUrlMatchBy(route, MatchBy.CONTAIN);
     }
 
@@ -562,12 +588,11 @@ public class CosengRunner {
      * @param route
      *            the route
      * @return true, if successful
-     * @see com.sios.stc.coseng.run.CosengRunner#currentUrlMatchBy(String,
-     *      MatchBy)
+     * @see #currentUrlMatchBy(String, MatchBy)
      * @since 2.1
      * @version.coseng
      */
-    protected boolean currentUrlEquals(String route) {
+    protected static boolean currentUrlEquals(String route) {
         return currentUrlMatchBy(route, MatchBy.EQUAL);
     }
 
@@ -579,12 +604,12 @@ public class CosengRunner {
      * @param matchBy
      *            the match by
      * @return true, if successful
-     * @see com.sios.stc.coseng.run.CosengRunner#currentUrlContains(String)
-     * @see com.sios.stc.coseng.run.CosengRunner#currentUrlEquals(String)
+     * @see #currentUrlContains(String)
+     * @see #currentUrlEquals(String)
      * @since 2.1
      * @version.coseng
      */
-    private boolean currentUrlMatchBy(String route, MatchBy matchBy) {
+    private static boolean currentUrlMatchBy(String route, MatchBy matchBy) {
         boolean matched = false;
         String currentUrl = getCurrentUrl();
         if (currentUrl != null) {
@@ -610,7 +635,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void acceptInvalidSSLCertificate() {
+    protected static void acceptInvalidSSLCertificate() {
         /*
          * To accept self-signed or other SSL Certificates Should try with
          * browser profile; this as last resort.
@@ -657,7 +682,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void saveScreenshot() {
+    protected static void saveScreenshot() {
         saveScreenshot(null);
     }
 
@@ -670,25 +695,26 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void saveScreenshot(String name) {
+    protected static void saveScreenshot(String name) {
         Test test = getTest();
         WebDriver webDriver = getWebDriver();
         if (test != null && webDriver != null) {
             if (test.isAllowScreenshots()) {
-                ArrayList<String> dirPaths = new ArrayList<String>();
-                dirPaths.add(test.getReportDirectoryFile().getAbsolutePath());
-                dirPaths.add(DIR_SCREENSHOTS);
-                dirPaths.add(test.getTestNgSuite());
-                dirPaths.add(test.getTestNgTest());
-                dirPaths.add(test.getTestNgClass());
-                dirPaths.add(test.getTestNgMethod());
-                String dirPath = StringUtils.join(dirPaths, File.separator);
-                if (name == null || name.isEmpty()) {
-                    DateFormat dateFormat = new SimpleDateFormat("YYYYMMddHHmmss");
-                    Calendar cal = Calendar.getInstance();
-                    name = dateFormat.format(cal.getTime());
-                }
+                String logHeader = getLogHeader();
                 try {
+                    ArrayList<String> dirPaths = new ArrayList<String>();
+                    dirPaths.add(test.getReportDirectoryFile().getAbsolutePath());
+                    dirPaths.add(DIR_SCREENSHOTS);
+                    dirPaths.add(test.getTestNgSuite().getName());
+                    dirPaths.add(test.getTestNgTest().getName());
+                    dirPaths.add(test.getTestNgClass().getName());
+                    dirPaths.add(test.getTestNgMethod().getTestMethod().getMethodName());
+                    String dirPath = StringUtils.join(dirPaths, File.separator);
+                    if (name == null || name.isEmpty()) {
+                        DateFormat dateFormat = new SimpleDateFormat("YYYYMMddHHmmss");
+                        Calendar cal = Calendar.getInstance();
+                        name = dateFormat.format(cal.getTime());
+                    }
                     /* Make directory in report directory */
                     File dir = new File(dirPath);
                     if (!dir.exists()) {
@@ -699,8 +725,10 @@ public class CosengRunner {
                             ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.FILE);
                     File screenshotOut = new File(dirPath + File.separator + name + ".png");
                     FileUtils.copyFile(screenshotIn, screenshotOut);
+                    log.info("{} Save screenshot [{}] successful", logHeader, name);
                 } catch (Exception e) {
-                    log.warn("Save screenshot [" + name + "] unsuccessful", e);
+                    log.warn("{} Save screenshot [{}] unsuccessful: {}", logHeader, name,
+                            e.getMessage());
                 }
             }
         }
@@ -721,12 +749,13 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void uploadFile(WebElement uploadElement, String fileName) throws CosengException {
+    protected static void uploadFile(WebElement uploadElement, String fileName)
+            throws CosengException {
         Test test = getTest();
         if (test != null && fileName != null && !fileName.isEmpty() && uploadElement != null
                 && uploadElement.isDisplayed() && uploadElement.getAttribute("readonly") == null) {
             try {
-                InputStream fileInput = Resource.get(fileName);
+                InputStream fileInput = Resource.getStream(fileName);
                 File resourceDir = test.getResourceDirectory();
                 File resource = new File(resourceDir + File.separator + fileName);
                 Resource.create(fileInput, resource);
@@ -756,7 +785,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void pause() {
+    protected static void pause() {
         pause(null);
     }
 
@@ -768,7 +797,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected void pause(Long milliseconds) {
+    protected static void pause(Long milliseconds) {
         Long millis = new Long(1000);
         if (milliseconds != null && milliseconds >= 0) {
             millis = milliseconds;
@@ -861,7 +890,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected synchronized Set<String> getAllUrls() {
+    protected static synchronized Set<String> getAllUrls() {
         return allUrlsTag.keySet();
     }
 
@@ -892,7 +921,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected synchronized String getAllUrlTag(String url) {
+    protected static synchronized String getAllUrlTag(String url) {
         if (allUrlsTag.containsKey(url)) {
             return allUrlsTag.get(url);
         }
@@ -927,7 +956,7 @@ public class CosengRunner {
      * @since 2.1
      * @version.coseng
      */
-    protected synchronized Set<String> getAllUrlRoutes(String url) {
+    protected static synchronized Set<String> getAllUrlRoutes(String url) {
         Set<String> routes = new HashSet<String>();
         if (allUrlsRoutes.containsKey(url)) {
             return allUrlsRoutes.get(url);
@@ -973,20 +1002,21 @@ public class CosengRunner {
     private synchronized void saveUrls(boolean allUrls) {
         Test test = getTest();
         if (test != null && test.isAllowFindUrls()) {
+            String logHeader = getLogHeader();
             String fileName = "foundUrls.txt";
             if (allUrls) {
                 fileName = "allFoundUrls.txt";
             }
-            ArrayList<String> dirPaths = new ArrayList<String>();
-            dirPaths.add(test.getReportDirectoryFile().getAbsolutePath());
-            dirPaths.add(DIR_ADDITIONAL_REPORTS);
-            dirPaths.add(test.getTestNgSuite());
-            dirPaths.add(test.getTestNgTest());
-            dirPaths.add(test.getTestNgClass());
-            dirPaths.add(test.getTestNgMethod());
-            String dirPath = StringUtils.join(dirPaths, File.separator);
-            File file = new File(dirPath + File.separator + fileName);
             try {
+                ArrayList<String> dirPaths = new ArrayList<String>();
+                dirPaths.add(test.getReportDirectoryFile().getAbsolutePath());
+                dirPaths.add(DIR_ADDITIONAL_REPORTS);
+                dirPaths.add(test.getTestNgSuite().getName());
+                dirPaths.add(test.getTestNgTest().getName());
+                dirPaths.add(test.getTestNgClass().getName());
+                dirPaths.add(test.getTestNgMethod().getTestMethod().getMethodName());
+                String dirPath = StringUtils.join(dirPaths, File.separator);
+                File file = new File(dirPath + File.separator + fileName);
                 /* Make directory in report directory */
                 File dir = new File(dirPath);
                 if (!dir.exists()) {
@@ -1009,7 +1039,7 @@ public class CosengRunner {
                         new ByteArrayInputStream(longReport.getBytes(StandardCharsets.UTF_8));
                 FileUtils.copyToFile(stream, file);
             } catch (Exception e) {
-                log.warn("Save found URLs [" + file.getName() + "] unsuccessful", e);
+                log.warn(logHeader + " Save found URLs [" + fileName + "] unsuccessful", e);
             }
         }
     }
@@ -1099,6 +1129,7 @@ public class CosengRunner {
      */
     private synchronized boolean urlsAccessible(Set<String> skipTags, Set<String> skipUrls,
             boolean allUrls) {
+        String logHeader = getLogHeader();
         boolean allUrlsAccessible = true;
         Set<String> urls = getUrls();
         if (allUrls) {
@@ -1114,13 +1145,14 @@ public class CosengRunner {
                 skip = true;
             }
             if (skip) {
-                log.warn("Skipping URL [{}], tag [{}]; found on routes {}", url, tag,
+                log.warn(logHeader + " Skipping URL [{}], tag [{}]; found on routes {}", url, tag,
                         getAllUrlRoutes(url));
                 continue;
             }
             if (!Http.isAccessible(url)) {
                 Integer responseCode = Http.getResponseCode(url);
-                log.error("URL [{}], tag [{}], response code [{}]; found on routes {}", url, tag,
+                log.error(logHeader + " URL [{}], tag [{}], response code [{}]; found on routes {}",
+                        url, tag,
                         (responseCode == null || responseCode == 0 ? "n/a" : responseCode),
                         getAllUrlRoutes(url));
                 allUrlsAccessible = false;
@@ -1137,157 +1169,368 @@ public class CosengRunner {
      * @since 2.2
      * @version.coseng
      */
-    public void sendKeyboard(Keys key) {
+    protected static void sendKeyboard(Keys key) {
         Actions actions = getActions();
         if (actions != null) {
             actions.sendKeys(key).build().perform();
         }
     }
 
-    /* Deprecated */
-
     /**
-     * Sets the thread test association.
+     * Log test step result.
      *
-     * @param thread
-     *            the thread
-     * @param test
-     *            the test
-     * @see com.sios.stc.coseng.run.CosengRunner#addThreadTest(Thread, Test)
-     * @since 2.0
+     * @param logLevel
+     *            the log level
+     * @param logMessage
+     *            the log message
+     * @param expectedResult
+     *            the expected result
+     * @param actualResult
+     *            the actual result
+     * @since 3.0
      * @version.coseng
      */
-    @Deprecated
-    protected static synchronized void setThreadTest(Thread thread, Test test) {
-        addThreadTest(thread, test);
-    }
-
-    /**
-     * Gets the web driver util.
-     *
-     * @return the web driver util
-     * @see com.sios.stc.coseng.run.WebDriverToolbox#getWebDriverUtil()
-     * @see com.sios.stc.coseng.run.WebDriverUtil
-     * @since 2.0
-     * @version.coseng
-     */
-    @Deprecated
-    protected WebDriverUtil getWebDriverUtil() {
-        try {
-            return new WebDriverUtil();
-        } catch (CosengException e) {
-            e.printStackTrace();
-            return null;
+    private static void logTestStepResult(org.apache.logging.log4j.Level logLevel,
+            String logMessage, String expectedResult, String actualResult) {
+        Test test = getTest();
+        String logHeader = getLogHeader();
+        String reporterBreak = "<br>";
+        String appendResult =
+                (expectedResult == null ? "" : ", expected result [" + expectedResult + "]")
+                        + (actualResult == null ? "" : ", actual result [" + actualResult + "]");
+        if (logLevel == null) {
+            logLevel = defaultLogLevel;
+        }
+        log.log(logLevel, "{} {}", logHeader, logMessage + appendResult);
+        Reporter.log(logMessage + appendResult + reporterBreak);
+        for (Integrator i : GetIntegrators.wired()) {
+            try {
+                i.addTestStep(test, logMessage);
+                i.addTestStepExpectedResult(test, logMessage, expectedResult);
+                i.addTestStepActualResult(test, logMessage, actualResult);
+            } catch (CosengException e) {
+                log.error(
+                        "{} Unable to add integrator [{}],test step result message [{}], expected [{}], actual [{}]: {}",
+                        logHeader, i.getClass().getName(), logMessage, expectedResult, actualResult,
+                        e.getMessage());
+            }
         }
     }
 
     /**
-     * Gets the web driver toolbox for the current thread.
+     * Log test step.
      *
-     * @return the web driver toolbox
-     * @since 2.0
+     * @param step
+     *            the step
+     * @since 3.0
      * @version.coseng
      */
-    @Deprecated
-    protected static synchronized WebDriverToolbox getWebDriverToolbox() {
-        try {
-            return new WebDriverToolbox(getTest(), getWebDriver(), getWebDriverService());
-        } catch (CosengException e) {
-            e.printStackTrace();
-            return null;
+    protected static void logTestStep(String step) {
+        String logMessage = "> Test [" + step + "]";
+        logTestStepResult(defaultLogLevel, logMessage, null, null);
+    }
+
+    /**
+     * Log message.
+     *
+     * @param message
+     *            the message
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logMessage(String message) {
+        logMessage(message, defaultLogLevel);
+    }
+
+    /**
+     * Adds the test step message. Convenience method to log a test message to
+     * the log file, as well as any wired integrators, without having to use
+     * assertions.
+     *
+     * @param stepMessage
+     *            the step message
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logMessage(String message, org.apache.logging.log4j.Level logLevel) {
+        String logMessage = "# Message [" + message + "]";
+        logTestStepResult(logLevel, logMessage, null, null);
+    }
+
+    /**
+     * Log skip test for browser.
+     *
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForBrowser() {
+        logSkipTestForBrowser(getTest().getBrowser(), null,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(),
+                org.apache.logging.log4j.Level.WARN);
+    }
+
+    /**
+     * Log skip test for browser.
+     *
+     * @param message
+     *            the message
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForBrowser(String message) {
+        logSkipTestForBrowser(getTest().getBrowser(), message,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(),
+                org.apache.logging.log4j.Level.WARN);
+    }
+
+    /**
+     * Log skip test for browser.
+     *
+     * @param message
+     *            the message
+     * @param logLevel
+     *            the log level
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForBrowser(String message,
+            org.apache.logging.log4j.Level logLevel) {
+        logSkipTestForBrowser(getTest().getBrowser(), message,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(), logLevel);
+    }
+
+    /**
+     * Log skip test for browser.
+     *
+     * @param browser
+     *            the browser
+     * @param message
+     *            the message
+     * @param lineNumber
+     *            the line number
+     * @param logLevel
+     *            the log level
+     * @since 3.0
+     * @version.coseng
+     */
+    private static void logSkipTestForBrowser(Browser browser, String message, int lineNumber,
+            org.apache.logging.log4j.Level logLevel) {
+        String logMessage =
+                "- Skipping test near line number [" + lineNumber + "], browser [" + browser + "]";
+        if (message != null) {
+            logMessage += ", message [" + message + "]";
+        }
+        logTestStepResult(logLevel, logMessage, null, null);
+    }
+
+    /**
+     * Log skip test for defect.
+     *
+     * @param defectId
+     *            the defect id
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForDefect(String defectId) {
+        logSkipTestForDefect(defectId, null,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(),
+                org.apache.logging.log4j.Level.WARN);
+    }
+
+    /**
+     * Log skip test for defect.
+     *
+     * @param defectId
+     *            the defect id
+     * @param message
+     *            the message
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForDefect(String defectId, String message) {
+        logSkipTestForDefect(defectId, message,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(),
+                org.apache.logging.log4j.Level.WARN);
+    }
+
+    /**
+     * Log skip test for defect.
+     *
+     * @param defectId
+     *            the defect id
+     * @param message
+     *            the message
+     * @param logLevel
+     *            the log level
+     * @since 3.0
+     * @version.coseng
+     */
+    protected static void logSkipTestForDefect(String defectId, String message,
+            org.apache.logging.log4j.Level logLevel) {
+        logSkipTestForDefect(defectId, message,
+                Thread.currentThread().getStackTrace()[2].getLineNumber(), logLevel);
+    }
+
+    /**
+     * Log skip test for defect.
+     *
+     * @param defectId
+     *            the defect id
+     * @param message
+     *            the message
+     * @param lineNumber
+     *            the line number
+     * @param logLevel
+     *            the log level
+     * @since 3.0
+     * @version.coseng
+     */
+    private static void logSkipTestForDefect(String defectId, String message, int lineNumber,
+            org.apache.logging.log4j.Level logLevel) {
+        String logMessage = "- Skipping test near line number [" + lineNumber + "], defect ["
+                + defectId + "], message [" + message + "]";
+        logTestStepResult(logLevel, logMessage, null, null);
+    }
+
+    /**
+     * The Class LogAssert.
+     *
+     * @since 3.0
+     * @version.coseng
+     */
+    protected class LogAssert extends Assertion {
+        /*
+         * getExpected and getActual return less than helpful values depending
+         * on the assert method. ie. assertNotNull, assertEquals. So, rather
+         * than doing a laundry list of reflections just report on success or on
+         * failure.
+         */
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see org.testng.asserts.Assertion#onAssertSuccess(org.testng.asserts.
+         * IAssert)
+         */
+        @Override
+        public synchronized void onAssertSuccess(IAssert<?> a) {
+            if (a != null) {
+                String message = Common.STRING_UNKNOWN;
+                if (a.getMessage() != null) {
+                    message = a.getMessage();
+                }
+                String logMessage = "+ Assertion [" + message + "]";
+                logTestStepResult(org.apache.logging.log4j.Level.INFO, logMessage,
+                        Common.STRING_ASSERTION_SUCESS, Common.STRING_ASSERTION_SUCESS);
+            } else {
+                log.debug("Assertion was null");
+            }
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see org.testng.asserts.Assertion#onAssertFailure(org.testng.asserts.
+         * IAssert)
+         */
+        @Override
+        public synchronized void onAssertFailure(IAssert<?> a) {
+            if (a != null) {
+                String message = Common.STRING_UNKNOWN;
+                if (a.getMessage() != null) {
+                    message = a.getMessage();
+                }
+                String logMessage = "+ Assertion [" + message + "]";
+                logTestStepResult(org.apache.logging.log4j.Level.ERROR, logMessage,
+                        Common.STRING_ASSERTION_SUCESS, Common.STRING_ASSERTION_FAIL);
+                saveScreenshot("AssertFailure-" + assertFailureCount++);
+            } else {
+                log.debug("Assertion was null");
+            }
         }
     }
 
     /**
-     * Gets the web driver toolbox for a given thread.
+     * The Class LogSoftAssert.
      *
-     * @param thread
-     *            the thread
-     * @return the web driver toolbox
-     * @since 2.0
+     * @since 3.0
      * @version.coseng
      */
-    @Deprecated
-    protected static synchronized WebDriverToolbox getWebDriverToolbox(Thread thread) {
-        try {
-            return new WebDriverToolbox(getTest(thread), getWebDriver(thread),
-                    getWebDriverService(thread));
-        } catch (CosengException e) {
-            e.printStackTrace();
-            return null;
+    protected class LogSoftAssert extends SoftAssert {
+        /*
+         * getExpected and getActual return less than helpful values depending
+         * on the assert method. ie. assertNotNull, assertEquals. So, rather
+         * than doing a laundry list of reflections just report on success or on
+         * failure.
+         */
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see org.testng.asserts.Assertion#onAssertSuccess(org.testng.asserts.
+         * IAssert)
+         */
+        @Override
+        public synchronized void onAssertSuccess(IAssert<?> a) {
+            if (a != null) {
+                String message = Common.STRING_UNKNOWN;
+                if (a.getMessage() != null) {
+                    message = a.getMessage();
+                }
+                String logMessage = "+ SoftAssertion [" + message + "]";
+                logTestStepResult(org.apache.logging.log4j.Level.INFO, logMessage,
+                        Common.STRING_ASSERTION_SUCESS, Common.STRING_ASSERTION_SUCESS);
+            } else {
+                log.debug("Assertion was null");
+            }
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see org.testng.asserts.Assertion#onAssertFailure(org.testng.asserts.
+         * IAssert)
+         */
+        @Override
+        public synchronized void onAssertFailure(IAssert<?> a) {
+            if (a != null) {
+                String message = Common.STRING_UNKNOWN;
+                if (a.getMessage() != null) {
+                    message = a.getMessage();
+                }
+                String logMessage = "+ SoftAssertion [" + message + "]";
+                logTestStepResult(org.apache.logging.log4j.Level.ERROR, logMessage,
+                        Common.STRING_ASSERTION_SUCESS, Common.STRING_ASSERTION_FAIL);
+                saveScreenshot("AssertFailure-" + assertFailureCount++);
+            } else {
+                log.debug("Assertion was null");
+            }
         }
     }
 
     /**
-     * Sets the web driver toolbox for a given thread.
+     * Gets the log header as a combination of the TestNG test, suite, test,
+     * class and method names to prepend logging.
      *
-     * @param thread
-     *            the thread
-     * @param webDriverToolbox
-     *            the web driver toolbox
-     * @since 2.0
+     * @return the log header
+     * @since 3.0
      * @version.coseng
      */
-    @Deprecated
-    protected static synchronized void setWebDriverToolbox(Thread thread,
-            WebDriverToolbox webDriverToolbox) {
-        // do nothing
-    }
-
-    /**
-     * Checks for web driver toolbox for the current thread.
-     *
-     * @return true, if successful
-     * @since 2.0
-     * @version.coseng
-     */
-    @Deprecated
-    protected static synchronized boolean hasWebDriverToolbox() {
-        return false;
-    }
-
-    /**
-     * Checks for web driver toolbox for a given thread.
-     *
-     * @param thread
-     *            the thread
-     * @return true, if successful
-     * @since 2.0
-     * @version.coseng
-     */
-    @Deprecated
-    protected static synchronized boolean hasWebDriverToolbox(Thread thread) {
-        return false;
-    }
-
-    /**
-     * Gets the web elements.
-     *
-     * @return the web elements
-     * @see com.sios.stc.coseng.run.WebDriverToolbox#getWebElements()
-     * @see com.sios.stc.coseng.run.WebElements
-     * @see com.sios.stc.coseng.run.WebElement
-     * @since 2.0
-     * @version.coseng
-     */
-    @Deprecated
-    protected WebElements getWebElements() {
-        return webElements;
-    }
-
-    /**
-     * Gets the web element list.
-     *
-     * @return the web element list
-     * @see com.sios.stc.coseng.run.WebDriverToolbox#getWebElementList()
-     * @see com.sios.stc.coseng.run.WebElements
-     * @see com.sios.stc.coseng.run.WebElement
-     * @since 2.0
-     * @version.coseng
-     */
-    @Deprecated
-    protected List<com.sios.stc.coseng.run.WebElement> getWebElementList() {
-        return webElements.get();
+    private static String getLogHeader() {
+        Test test = CosengRunner.getTest();
+        String logHeader = Common.STRING_UNKNOWN;
+        try {
+            List<String> headers = new ArrayList<String>();
+            headers.add("cosengTest [" + test.getName());
+            headers.add("suite [" + test.getTestNgSuite().getName());
+            headers.add("test [" + test.getTestNgTest().getName());
+            headers.add("class [" + test.getTestNgClass().getName());
+            headers.add("method [" + test.getTestNgMethod().getTestMethod().getMethodName());
+            logHeader = StringUtils.join(headers, "], ") + "]";
+        } catch (Exception e) {
+            logHeader = ("exception [" + e.getMessage() + "]");
+        }
+        return "[" + logHeader + "]:";
     }
 
 }

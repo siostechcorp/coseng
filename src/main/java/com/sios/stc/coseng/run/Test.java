@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,20 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Platform;
+import org.testng.IInvokedMethod;
+import org.testng.ISuite;
+import org.testng.ITestClass;
+import org.testng.ITestContext;
 import org.testng.xml.XmlSuite;
 
 import com.google.gson.annotations.Expose;
+import com.sios.stc.coseng.integration.Data;
+import com.sios.stc.coseng.integration.IntegratorData;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
 
@@ -44,7 +51,7 @@ import com.sios.stc.coseng.run.Locations.Location;
  *   "platform": "linux",
  *   "location": "grid",
  *   "browser": "chrome",
- *   "browserVersion": "11.0",
+ *   "browserRequestVersion": "11.0",
  *   "oneWebDriver": true,
  *   "suites": [
  *     "Demo.xml"
@@ -62,8 +69,9 @@ import com.sios.stc.coseng.run.Locations.Location;
  * <dd>location: node</dd>
  * <dd>platform: any</dd>
  * <dd>browser: all</dd>
- * <dd>browserVersion:
+ * <dd>browserRequestVersion:
  * {@value com.sios.stc.coseng.run.Browsers#BROWSER_VERSION_DEFAULT}</dd>
+ * <dd>browserHeadless: false</dd>
  * <dd>incognito: false (private/incognito for any supported browser)</dd>
  * <dd>acceptInvalidCerts: false</dd>
  * <dd>angular2App: false</dd>
@@ -83,72 +91,129 @@ import com.sios.stc.coseng.run.Locations.Location;
  * @since 2.0
  * @version.coseng
  */
-public class Test {
+public class Test implements IntegratorData {
 
     private static final int WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT     = 5;
     private static final int WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT = 5;
 
-    private static boolean incognitoDefault          = false;
-    private static boolean acceptInvalidCertsDefault = false;
-    private static boolean oneWebDriverDefault       = false;
-    private static boolean angular2AppDefault        = false;
-    private static boolean allowFindUrlsDefault      = false;
-    private static boolean allowScreenshotsDefault   = false;
-    private static boolean browserMaximizeDefault    = false;
+    private boolean        incognitoDefault          = false;
+    private boolean        acceptInvalidCertsDefault = false;
+    private boolean        oneWebDriverDefault       = false;
+    private boolean        angular2AppDefault        = false;
+    private boolean        allowFindUrlsDefault      = false;
+    private boolean        allowScreenshotsDefault   = false;
+    private boolean        browserMaximizeDefault    = false;
     private List<XmlSuite> xmlSuites                 = new ArrayList<XmlSuite>();
     private String         reportDirectory           = null;
     private File           resourceDirectory         = null;
     private boolean        failed                    = false;
     private boolean        synthetic                 = false;
     private File           webDriver                 = null;
-    private String         testNgSuite               = "";
-    private String         testNgTest                = "";
-    private String         testNgClass               = "";
-    private String         testNgMethod              = "";
+    private ISuite         testNgSuite               = null;
+    private ITestContext   testNgTest                = null;
+    private ITestClass     testNgClass               = null;
+    private IInvokedMethod testNgMethod              = null;
     private int            testSuiteCount            = 0;
+    private List<Data>     integratorData            = new ArrayList<Data>();
 
     @Expose
-    private String             name                        = null;
+    private String       name                        = null;
     @Expose
-    private final Location     location                    = Location.NODE;
+    private Location     location                    = Location.NODE;
     @Expose
-    private Platform           platform                    = Platform.ANY;
+    private Platform     platform                    = Platform.ANY;
     @Expose
-    private Browser            browser                     = Browser.ALL;
+    private Browser      browser                     = Browser.ALL;
     @Expose
-    private final List<String> suites                      = new ArrayList<String>();
+    private List<String> suites                      = new ArrayList<String>();
     @Expose
-    private final String       baseUrl                     = null;
+    private String       baseUrl                     = null;
     @Expose
-    private String             gridUrl                     = null;
+    private String       gridUrl                     = null;
     @Expose
-    private final boolean      oneWebDriver                = oneWebDriverDefault;
+    private boolean      oneWebDriver                = oneWebDriverDefault;
     @Expose
-    private final Integer      webDriverTimeoutSeconds     =
-            WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT;
+    private Integer      webDriverTimeoutSeconds     = WEB_DRIVER_WAIT_TIMEOUT_SECONDS_DEFAULT;
     @Expose
-    private final Integer      webDriverWaitTimeoutSeconds =
-            WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT;
+    private Integer      webDriverWaitTimeoutSeconds = WEB_DRIVER_IMPLICIT_TIMEOUT_SECONDS_DEFAULT;
     @Expose
-    private String             browserVersion              = Browsers.BROWSER_VERSION_DEFAULT;
+    private String       browserRequestVersion       = Browsers.BROWSER_VERSION_DEFAULT;
     @Expose
-    private final boolean      incognito                   = incognitoDefault;
+    private boolean      browserHeadless             = false;
     @Expose
-    private final boolean      acceptInvalidCerts          = acceptInvalidCertsDefault;
+    private boolean      incognito                   = incognitoDefault;
     @Expose
-    private final boolean      angular2App                 = angular2AppDefault;
+    private boolean      acceptInvalidCerts          = acceptInvalidCertsDefault;
     @Expose
-    private final boolean      allowFindUrls               = allowFindUrlsDefault;
+    private boolean      angular2App                 = angular2AppDefault;
     @Expose
-    private final boolean      allowScreenshots            = allowScreenshotsDefault;
+    private boolean      allowFindUrls               = allowFindUrlsDefault;
     @Expose
-    private final Integer      browserWidth                = null;
+    private boolean      allowScreenshots            = allowScreenshotsDefault;
     @Expose
-    private final Integer      browserHeight               = null;
+    private Integer      browserWidth                = null;
     @Expose
-    private final boolean      browserMaximize             = browserMaximizeDefault;
+    private Integer      browserHeight               = null;
     @Expose
-    private final Integer      verbosity                   = 0;
+    private boolean      browserMaximize             = browserMaximizeDefault;
+    @Expose
+    private Integer      verbosity                   = 0;
+
+    protected Test deepCopy() {
+        return new Test(this);
+    }
+
+    protected Test() {
+        // do nothing
+    }
+
+    protected Test(Test original) {
+        this.incognitoDefault = original.incognitoDefault;
+        this.acceptInvalidCertsDefault = original.acceptInvalidCertsDefault;
+        this.oneWebDriverDefault = original.oneWebDriverDefault;
+        this.angular2AppDefault = original.angular2AppDefault;
+        this.allowFindUrlsDefault = original.allowFindUrlsDefault;
+        this.allowScreenshotsDefault = original.allowScreenshotsDefault;
+        this.browserMaximizeDefault = original.browserMaximizeDefault;
+        for (XmlSuite xml : original.xmlSuites) {
+            this.xmlSuites.add((XmlSuite) xml.clone());
+        }
+        this.xmlSuites.addAll(original.xmlSuites);
+        this.reportDirectory = original.reportDirectory;
+        this.resourceDirectory = original.resourceDirectory;
+        this.failed = original.failed;
+        this.synthetic = original.synthetic;
+        this.webDriver = original.webDriver;
+        this.testNgSuite = original.testNgSuite;
+        this.testNgTest = original.testNgTest;
+        this.testNgClass = original.testNgClass;
+        this.testNgMethod = original.testNgMethod;
+        this.testSuiteCount = original.testSuiteCount;
+        for (Data data : original.integratorData) {
+            this.integratorData.add(data.deepCopy());
+        }
+        this.browserRequestVersion = original.browserRequestVersion;
+        this.name = original.name;
+        this.location = original.location;
+        this.platform = original.platform;
+        this.browser = original.browser;
+        this.browserHeadless = original.browserHeadless;
+        this.suites.addAll(original.suites);
+        this.baseUrl = original.baseUrl;
+        this.gridUrl = original.gridUrl;
+        this.oneWebDriver = original.oneWebDriver;
+        this.webDriverTimeoutSeconds = original.webDriverTimeoutSeconds;
+        this.webDriverWaitTimeoutSeconds = original.webDriverWaitTimeoutSeconds;
+        this.incognito = original.incognito;
+        this.acceptInvalidCerts = original.acceptInvalidCerts;
+        this.angular2App = original.angular2App;
+        this.allowFindUrls = original.allowFindUrls;
+        this.allowScreenshots = original.allowScreenshots;
+        this.browserWidth = original.browserWidth;
+        this.browserHeight = original.browserHeight;
+        this.browserMaximize = original.browserMaximize;
+        this.verbosity = original.verbosity;
+    }
 
     /**
      * Gets the test name.
@@ -237,15 +302,25 @@ public class Test {
     }
 
     /**
-     * Gets the browser version. Browser version is ignored when the location is
-     * {@code NODE}.
+     * Gets the browser requested version.
      *
-     * @return the browser version
-     * @since 2.0
+     * @return the browser requested version
+     * @since 3.0
      * @version.coseng
      */
-    public String getBrowserVersion() {
-        return browserVersion;
+    public String getBrowserRequestVersion() {
+        return browserRequestVersion;
+    }
+
+    /**
+     * Gets the browser headless.
+     *
+     * @return the browser headless
+     * @since 3.0
+     * @version.coseng
+     */
+    public boolean getBrowserHeadless() {
+        return browserHeadless;
     }
 
     /**
@@ -566,7 +641,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    public String getTestNgSuite() {
+    public ISuite getTestNgSuite() {
         return this.testNgSuite;
     }
 
@@ -579,7 +654,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    protected void setTestNgSuite(String suite) {
+    protected void setTestNgSuite(ISuite suite) {
         if (suite != null) {
             this.testNgSuite = suite;
         }
@@ -593,7 +668,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    public String getTestNgTest() {
+    public ITestContext getTestNgTest() {
         return this.testNgTest;
     }
 
@@ -606,7 +681,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    protected void setTestNgTest(String test) {
+    protected void setTestNgTest(ITestContext test) {
         if (test != null) {
             this.testNgTest = test;
         }
@@ -620,7 +695,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    public String getTestNgClass() {
+    public ITestClass getTestNgClass() {
         return this.testNgClass;
     }
 
@@ -633,7 +708,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    protected void setTestNgClass(String clazz) {
+    protected void setTestNgClass(ITestClass clazz) {
         if (clazz != null) {
             this.testNgClass = clazz;
         }
@@ -648,7 +723,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    public String getTestNgMethod() {
+    public IInvokedMethod getTestNgMethod() {
         return this.testNgMethod;
     }
 
@@ -662,7 +737,7 @@ public class Test {
      * @since 2.1
      * @version.coseng
      */
-    protected void setTestNgMethod(String method) {
+    protected void setTestNgMethod(IInvokedMethod method) {
         if (method != null) {
             this.testNgMethod = method;
         }
@@ -784,14 +859,95 @@ public class Test {
     public String toString() {
         return "name [" + name + "], location [" + location + "], baseUrl [" + baseUrl
                 + "], gridUrl [" + gridUrl + "], platform [" + platform + "], suites " + suites
-                + ", browser [" + browser + "], browserVersion [" + browserVersion + "] incognito ["
-                + incognito + "], acceptInvalidCerts [" + acceptInvalidCerts + "], angular2App ["
-                + angular2App + "], allowFindUrls [" + allowFindUrls + "], allowScreenshots ["
-                + allowScreenshots + "], browserWidth [" + browserWidth + "], browserHeight ["
-                + browserHeight + "], browserMaximize [" + browserMaximize + "], oneWebDriver ["
-                + oneWebDriver + "], verbosity [" + verbosity + "], webDriverTimeoutSeconds ["
+                + ", browser [" + browser + "], browserRequestVersion [" + browserRequestVersion
+                + "], browserHeadless [" + browserHeadless + "], incognito [" + incognito
+                + "], acceptInvalidCerts [" + acceptInvalidCerts + "], angular2App [" + angular2App
+                + "], allowFindUrls [" + allowFindUrls + "], allowScreenshots [" + allowScreenshots
+                + "], browserWidth [" + browserWidth + "], browserHeight [" + browserHeight
+                + "], browserMaximize [" + browserMaximize + "], oneWebDriver [" + oneWebDriver
+                + "], verbosity [" + verbosity + "], webDriverTimeoutSeconds ["
                 + webDriverTimeoutSeconds + "], webDriverWaitTimeoutSeconds ["
                 + webDriverWaitTimeoutSeconds + "], reportDirectory [" + reportDirectory + "]";
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.sios.stc.coseng.integration.IntegratorData#getIntegratorData(java.
+     * lang.Class)
+     */
+    @Override
+    public Data getIntegratorData(Class<?> dataClass) {
+        if (dataClass != null) {
+            Iterator<Data> iterator = integratorData.iterator();
+            while (iterator.hasNext()) {
+                Data data = iterator.next();
+                if (dataClass.equals(data.getClass())) {
+                    return data;
+                }
+            }
+        }
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.sios.stc.coseng.integration.IntegratorData#hasIntegratorData(java.
+     * lang.Class)
+     */
+    @Override
+    public boolean hasIntegratorData(Class<?> dataClass) {
+        if (getIntegratorData(dataClass) != null) {
+            return true;
+        }
+        return false;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.sios.stc.coseng.integration.IntegratorData#addIntegratorData(com.sios
+     * .stc.coseng.integration.Data)
+     */
+    @Override
+    public boolean addIntegratorData(Data data) {
+        if (data != null) {
+            /* Only add unique integrator data classes */
+            if (!hasIntegratorData(data.getClass())) {
+                return integratorData.add(data);
+            }
+        }
+        return false;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.sios.stc.coseng.integration.IntegratorData#removeIntegratorData(java.
+     * lang.Class)
+     */
+    @Override
+    public boolean removeIntegratorData(Class<?> dataClass) {
+        Data data = getIntegratorData(dataClass);
+        if (data != null) {
+            return integratorData.remove(data);
+        }
+        return false;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.sios.stc.coseng.integration.IntegratorData#clearIntegratorData()
+     */
+    @Override
+    public void clearIntegratorData() {
+        integratorData.clear();
     }
 
 }

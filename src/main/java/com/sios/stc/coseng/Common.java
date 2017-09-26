@@ -14,34 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sios.stc.coseng.run;
+package com.sios.stc.coseng;
 
 /**
- * The Class Message.
+ * The Class Common.
  *
- * @since 2.0
+ * @since 3.0
  * @version.coseng
  */
-class Message {
+public class Common {
 
-    /**
-     * Details. A convenience method to format a message with the test name and
-     * message details.
-     *
-     * @param name
-     *            the name
-     * @param detail
-     *            the detail
-     * @return the message string referencing the details by name
-     * @since 2.0
-     * @version.coseng
-     */
-    protected static String details(String name, String detail) {
-        String log = "Test name [" + name + "]: ";
-        if (detail != null) {
-            log += detail;
-        }
-        return log;
-    }
+    public static final String STRING_EMPTY            = "";
+    public static final String STRING_UNKNOWN          = "unknown";
+    public static final String LIST_SEPARATOR          = ", ";
+    public static final String STRING_ASSERTION_SUCESS = "success";
+    public static final String STRING_ASSERTION_FAIL   = "fail";
 
 }

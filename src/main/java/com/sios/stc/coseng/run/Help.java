@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.sios.stc.coseng.run.Locations.Location;
+import com.sios.stc.coseng.util.Resource;
 
 /**
  * The Class HelpParameter provides current platform defaults for Tests and Node
@@ -93,7 +92,7 @@ class Help {
         p.add(space(2, "Note: timeout for executor pool"));
 
         p.add(space(1, ""));
-        p.add(getJson(node));
+        p.add(Resource.getJsonFromObject(node));
         return StringUtils.join(p, System.lineSeparator());
     }
 
@@ -110,7 +109,7 @@ class Help {
     protected static String getTest() {
         Test test = new Test();
         List<String> p = new ArrayList<String>();
-        p.add("Supported Test JSON Options & Example");
+        p.add("Supported Tests JSON Options & Example");
         p.add(space(1, "name: (required) String"));
         p.add(space(2, "Default [" + test.getName() + "]"));
 
@@ -125,9 +124,12 @@ class Help {
         p.add(space(2, "Default [" + test.getBrowser() + "]"));
         p.add(space(2, "Platform dependent for location [" + Location.NODE + "]"));
 
-        p.add(space(1, "browserVersion: (optional) String"));
+        p.add(space(1, "browserRequestedVersion: (optional) String"));
         p.add(space(2, "Default [" + Browsers.BROWSER_VERSION_DEFAULT + "]"));
         p.add(space(2, "Ignored for location [" + Location.NODE + "]"));
+
+        p.add(space(1, "browserHeadless: (optional) boolean"));
+        p.add(space(2, "Default [" + test.getBrowserHeadless() + "]"));
 
         p.add(space(1, "browserWidth: (optional) Integer > 0"));
         p.add(space(2, "Default [" + test.getBrowserWidth() + "]"));
@@ -203,7 +205,7 @@ class Help {
         suites.add("TestNG_suite.xml");
         Tests tests = new Tests();
         tests.add(test);
-        p.add(getJson(tests));
+        p.add(Resource.getJsonFromObject(tests));
         return StringUtils.join(p, System.lineSeparator());
     }
 
@@ -220,24 +222,6 @@ class Help {
      */
     private static String space(int repeat, String message) {
         return StringUtils.repeat(SPACER, repeat) + message;
-    }
-
-    /**
-     * Gets the pretty printed json rendition of the requested parameter object.
-     *
-     * @param parameter
-     *            the parameter object
-     * @return the pretty print json
-     * @see com.sios.stc.coseng.run.Node
-     * @see com.sios.stc.coseng.run.Tests
-     * @see com.sios.stc.coseng.run.Test
-     * @since 2.0
-     * @version.coseng
-     */
-    private static String getJson(Object parameter) {
-        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting()
-                .create();
-        return gson.toJson(parameter);
     }
 
 }

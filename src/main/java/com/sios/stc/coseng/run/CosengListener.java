@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,27 @@
  */
 package com.sios.stc.coseng.run;
 
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.testng.IClassListener;
 import org.testng.IExecutionListener;
 import org.testng.IInvokedMethod;
-import org.testng.IInvokedMethodListener;
+import org.testng.IInvokedMethodListener2;
+import org.testng.IReporter;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
 import org.testng.ITestClass;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
+import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 
-import com.rits.cloning.Cloner;
-import com.sios.stc.coseng.RunTests;
+import com.sios.stc.coseng.integration.Integrator;
+import com.sios.stc.coseng.integration.Integrator.TriggerOn;
 
 /**
  * The listener class for receiving all TestNG lifecycle events. This listener
@@ -92,7 +96,7 @@ import com.sios.stc.coseng.RunTests;
  * @version.coseng
  */
 public class CosengListener extends WebDriverLifecycle implements IExecutionListener,
-        ISuiteListener, ITestListener, IClassListener, IInvokedMethodListener {
+        ISuiteListener, ITestListener, IClassListener, IInvokedMethodListener2, IReporter {
 
     /**
      * The Enum WebDriverAction.
@@ -104,7 +108,8 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
         START, STOP
     };
 
-    private static final Logger log           = LogManager.getLogger(RunTests.class.getName());
+    private static final Logger log           =
+            LogManager.getLogger(CosengListener.class.getName());
     private Test                test;
     private boolean             isOneWebDriver;
     private ParallelMode        parallelMode;
@@ -134,7 +139,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @since 2.0
      * @version.coseng
      */
-    private synchronized void setCosengContext() throws CosengException {
+    private synchronized boolean setCosengContext() throws CosengException {
         Thread thread = Thread.currentThread();
         Test threadTest = CosengRunner.getThreadTest(thread);
         if (threadTest == null) {
@@ -146,33 +151,17 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
              * under TestNG's watch. Here when TestNG parallel mode is tests,
              * classes or methods.
              */
-            threadTest = cloneTest(test);
+            log.debug("No existing test matches thread [{}]; making copy", thread.getId());
+            threadTest = test.deepCopy();
             CosengRunner.addThreadTest(thread, threadTest);
         }
-        if (threadTest != null) {
-            test = threadTest;
+        if (CosengRunner.getThreadTest(thread) != null) {
+            test = CosengRunner.getThreadTest(thread);
             isOneWebDriver = test.isOneWebDriver();
-        } else {
-            throw new CosengException("Unable to find a coseng test for this thread");
-        }
-    }
-
-    /**
-     * Sets the thread context. Called by the TestNG Execution, Suite, Test,
-     * Class and Method listeners to adjust the context names for each level.
-     *
-     * @return true, if successful
-     * @see com.sios.stc.coseng.run.CosengListener#setCosengContext()
-     * @since 2.1
-     * @version.coseng
-     */
-    private synchronized boolean setThreadContext() {
-        try {
-            setCosengContext();
             return true;
-        } catch (CosengException e) {
+        } else {
             test.setIsFailed(true);
-            return false;
+            throw new CosengException("Unable to deep copy test [" + test.getName() + "]");
         }
     }
 
@@ -183,11 +172,16 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     /* <IExecutionListener> */
     @Override
-    public void onExecutionFinish() {
+    public synchronized void onExecutionFinish() {
         Thread thread = Thread.currentThread();
         log.debug(
-                "TestNG Executor AFTER; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                thread.getId(), test.getName(), parallelMode, isOneWebDriver);
+                "TestNG Executor AFTER; thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                thread.getId(), test.getName(), test.hashCode(), parallelMode, isOneWebDriver);
+        try {
+            notifyIntegrators(TriggerOn.EXECUTIONFINISH);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         if (isOneWebDriver) {
             try {
                 webDriverAction(WebDriverAction.STOP);
@@ -204,17 +198,23 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.IExecutionListener#onExecutionStart()
      */
     @Override
-    public void onExecutionStart() {
-        Thread thread = Thread.currentThread();
-        test = CosengRunner.getThreadTest(thread);
+    public synchronized void onExecutionStart() {
         /*
          * Don't use getXmlSuites().size() - it doesn't count the recursively
          * occurring XmlSuite with <test>
          */
         xmlSuiteCount = test.getTestSuiteCount();
+
+        try {
+            setCosengContext();
+            notifyIntegrators(TriggerOn.EXECUTIONSTART);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "TestNG Executor BEFORE; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}], xmlSuiteCount [{}]",
-                thread.getId(), test.getName(), parallelMode, isOneWebDriver, xmlSuiteCount);
+                "TestNG Executor BEFORE; thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}], xmlSuiteCount [{}]",
+                Thread.currentThread().getId(), test.getName(), test.hashCode(), parallelMode,
+                isOneWebDriver, xmlSuiteCount);
         if (isOneWebDriver) {
             try {
                 webDriverAction(WebDriverAction.START);
@@ -233,12 +233,17 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     /* <ISuiteListener> */
     @Override
-    public void onFinish(ISuite arg0) {
-        Thread thread = Thread.currentThread();
+    public synchronized void onFinish(ISuite arg0) {
+        try {
+            setCosengContext();
+            notifyIntegrators(TriggerOn.SUITEFINISH);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Suite AFTER; suite [{}], thread [{}], test [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
-                arg0.getName(), thread.getId(), test.getName(), parallelMode, xmlSuiteCount,
-                isOneWebDriver);
+                "Suite AFTER; suite [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
+                arg0.getName(), Thread.currentThread().getId(), test.getName(), test.hashCode(),
+                parallelMode, xmlSuiteCount, isOneWebDriver);
         if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount >= 0) {
             try {
                 webDriverAction(WebDriverAction.STOP);
@@ -255,8 +260,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.ISuiteListener#onStart(org.testng.ISuite)
      */
     @Override
-    public void onStart(ISuite arg0) {
-        Thread thread = Thread.currentThread();
+    public synchronized void onStart(ISuite arg0) {
         /*
          * Get the current Suite XML parallel mode; likely different from any
          * previous suite execution.
@@ -269,19 +273,24 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
          * already been through the suite before/after cycle.
          */
         xmlSuiteCount--;
+
+        try {
+            setCosengContext();
+            test.setTestNgSuite(arg0);
+            notifyIntegrators(TriggerOn.SUITESTART);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Suite BEFORE; suite [{}], thread [{}], test [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
-                arg0.getName(), thread.getId(), test.getName(), parallelMode, xmlSuiteCount,
-                isOneWebDriver);
-        if (setThreadContext()) {
-            test.setTestNgSuite(arg0.getName());
-            if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount >= 0) {
-                try {
-                    webDriverAction(WebDriverAction.START);
-                } catch (CosengException e) {
-                    test.setIsFailed(true);
-                    throw new RuntimeException(e);
-                }
+                "Suite BEFORE; suite [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], xmlSuiteCount [{}], isOneWebDriver [{}]",
+                arg0.getName(), Thread.currentThread().getId(), test.getName(), test.hashCode(),
+                parallelMode, xmlSuiteCount, isOneWebDriver);
+        if (!isOneWebDriver && ParallelMode.NONE.equals(parallelMode) && xmlSuiteCount >= 0) {
+            try {
+                webDriverAction(WebDriverAction.START);
+            } catch (CosengException e) {
+                test.setIsFailed(true);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -294,10 +303,17 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     /* <ITestListener> */
     @Override
-    public void onFinish(ITestContext arg0) {
-        Thread thread = Thread.currentThread();
-        log.debug("Test AFTER; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                thread.getId(), test.getName(), parallelMode, isOneWebDriver);
+    public synchronized void onFinish(ITestContext arg0) {
+        try {
+            setCosengContext();
+            notifyIntegrators(TriggerOn.TESTFINISH);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
+        log.debug(
+                "Test AFTER; thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                Thread.currentThread().getId(), test.getName(), test.hashCode(), parallelMode,
+                isOneWebDriver);
         if (!isOneWebDriver && ParallelMode.TESTS.equals(parallelMode)) {
             try {
                 webDriverAction(WebDriverAction.STOP);
@@ -313,20 +329,27 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * 
      * @see org.testng.ITestListener#onStart(org.testng.ITestContext)
      */
+    /* <ITestListener> */
     @Override
-    public void onStart(ITestContext arg0) {
-        Thread thread = Thread.currentThread();
-        log.debug("Test BEFORE; thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                thread.getId(), test.getName(), parallelMode, isOneWebDriver);
-        if (setThreadContext()) {
-            test.setTestNgTest(arg0.getName());
-            if (!isOneWebDriver && ParallelMode.TESTS.equals(parallelMode)) {
-                try {
-                    webDriverAction(WebDriverAction.START);
-                } catch (CosengException e) {
-                    test.setIsFailed(true);
-                    throw new RuntimeException(e);
-                }
+    public synchronized void onStart(ITestContext arg0) {
+        try {
+            setCosengContext();
+            test.setTestNgTest(arg0);
+            notifyIntegrators(TriggerOn.TESTSTART);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
+        log.debug(
+                "Test BEFORE; thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                Thread.currentThread().getId(), test.getName(), test.hashCode(), parallelMode,
+                isOneWebDriver);
+
+        if (!isOneWebDriver && ParallelMode.TESTS.equals(parallelMode)) {
+            try {
+                webDriverAction(WebDriverAction.START);
+            } catch (CosengException e) {
+                test.setIsFailed(true);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -338,7 +361,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * testng.ITestResult)
      */
     @Override
-    public void onTestFailedButWithinSuccessPercentage(ITestResult arg0) {
+    public synchronized void onTestFailedButWithinSuccessPercentage(ITestResult arg0) {
         // TODO Auto-generated method stub
 
     }
@@ -349,7 +372,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.ITestListener#onTestFailure(org.testng.ITestResult)
      */
     @Override
-    public void onTestFailure(ITestResult arg0) {
+    public synchronized void onTestFailure(ITestResult arg0) {
         // TODO Auto-generated method stub
 
     }
@@ -360,7 +383,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.ITestListener#onTestSkipped(org.testng.ITestResult)
      */
     @Override
-    public void onTestSkipped(ITestResult arg0) {
+    public synchronized void onTestSkipped(ITestResult arg0) {
         // TODO Auto-generated method stub
 
     }
@@ -371,7 +394,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.ITestListener#onTestStart(org.testng.ITestResult)
      */
     @Override
-    public void onTestStart(ITestResult arg0) {
+    public synchronized void onTestStart(ITestResult arg0) {
 
     }
 
@@ -381,7 +404,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.ITestListener#onTestSuccess(org.testng.ITestResult)
      */
     @Override
-    public void onTestSuccess(ITestResult arg0) {
+    public synchronized void onTestSuccess(ITestResult arg0) {
         // TODO Auto-generated method stub
 
     }
@@ -394,11 +417,17 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     /* <IClassListener> */
     @Override
-    public void onAfterClass(ITestClass arg0) {
-        Thread thread = Thread.currentThread();
+    public synchronized void onAfterClass(ITestClass arg0) {
+        try {
+            setCosengContext();
+            notifyIntegrators(TriggerOn.CLASSFINISH);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Class AFTER; class [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                arg0.getName(), thread.getId(), test.getName(), parallelMode, isOneWebDriver);
+                "Class AFTER; class [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                arg0.getName(), Thread.currentThread().getId(), test.getName(), test.hashCode(),
+                parallelMode, isOneWebDriver);
         if (!isOneWebDriver && ParallelMode.CLASSES.equals(parallelMode)) {
             try {
                 webDriverAction(WebDriverAction.STOP);
@@ -415,20 +444,24 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @see org.testng.IClassListener#onBeforeClass(org.testng.ITestClass)
      */
     @Override
-    public void onBeforeClass(ITestClass arg0) {
+    public synchronized void onBeforeClass(ITestClass arg0) {
+        try {
+            setCosengContext();
+            test.setTestNgClass(arg0);
+            notifyIntegrators(TriggerOn.CLASSSTART);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Class BEFORE; class [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                arg0.getName(), Thread.currentThread().getId(), test.getName(), parallelMode,
-                isOneWebDriver);
-        if (setThreadContext()) {
-            test.setTestNgClass(arg0.getName());
-            if (!isOneWebDriver && ParallelMode.CLASSES.equals(parallelMode)) {
-                try {
-                    webDriverAction(WebDriverAction.START);
-                } catch (CosengException e) {
-                    test.setIsFailed(true);
-                    throw new RuntimeException(e);
-                }
+                "Class BEFORE; class [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                arg0.getName(), Thread.currentThread().getId(), test.getName(), test.hashCode(),
+                parallelMode, isOneWebDriver);
+        if (!isOneWebDriver && ParallelMode.CLASSES.equals(parallelMode)) {
+            try {
+                webDriverAction(WebDriverAction.START);
+            } catch (CosengException e) {
+                test.setIsFailed(true);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -442,11 +475,43 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      */
     /* <IMethodListener> */
     @Override
-    public void afterInvocation(IInvokedMethod arg0, ITestResult arg1) {
+    public synchronized void afterInvocation(IInvokedMethod method, ITestResult testResult) {
+        afterInvocation(method, testResult, null);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.testng.IInvokedMethodListener#beforeInvocation(org.testng.
+     * IInvokedMethod, org.testng.ITestResult)
+     */
+    @Override
+    public synchronized void beforeInvocation(IInvokedMethod method, ITestResult testResult) {
+        beforeInvocation(method, testResult, null);
+    }
+    /* </IMethodListener> */
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.testng.IInvokedMethodListener2#afterInvocation(org.testng.
+     * IInvokedMethod, org.testng.ITestResult, org.testng.ITestContext)
+     */
+    /* <IMethodListener2> */
+    @Override
+    public synchronized void afterInvocation(IInvokedMethod method, ITestResult testResult,
+            ITestContext context) {
+        try {
+            setCosengContext();
+            notifyIntegrators(TriggerOn.METHODFINISH);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Method AFTER; class [{}], method [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                arg0.getTestMethod().getRealClass().getName(), arg0.getTestMethod().getMethodName(),
-                Thread.currentThread().getId(), test.getName(), parallelMode, isOneWebDriver);
+                "Method AFTER; class [{}], method [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                method.getTestMethod().getRealClass().getName(),
+                method.getTestMethod().getMethodName(), Thread.currentThread().getId(),
+                test.getName(), test.hashCode(), parallelMode, isOneWebDriver);
         if (!isOneWebDriver && ParallelMode.METHODS.equals(parallelMode)) {
             try {
                 webDriverAction(WebDriverAction.STOP);
@@ -460,28 +525,34 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
     /*
      * (non-Javadoc)
      * 
-     * @see org.testng.IInvokedMethodListener#beforeInvocation(org.testng.
-     * IInvokedMethod, org.testng.ITestResult)
+     * @see org.testng.IInvokedMethodListener2#beforeInvocation(org.testng.
+     * IInvokedMethod, org.testng.ITestResult, org.testng.ITestContext)
      */
     @Override
-    public void beforeInvocation(IInvokedMethod arg0, ITestResult arg1) {
+    public synchronized void beforeInvocation(IInvokedMethod method, ITestResult testResult,
+            ITestContext context) {
+        try {
+            setCosengContext();
+            test.setTestNgMethod(method);
+            notifyIntegrators(TriggerOn.METHODSTART);
+        } catch (CosengException e) {
+            throw new RuntimeException(e);
+        }
         log.debug(
-                "Method BEFORE; class [{}], method [{}], thread [{}], test [{}], parallelMode [{}], isOneWebDriver [{}]",
-                arg0.getTestMethod().getRealClass().getName(), arg0.getTestMethod().getMethodName(),
-                Thread.currentThread().getId(), test.getName(), parallelMode, isOneWebDriver);
-        if (setThreadContext()) {
-            test.setTestNgMethod(arg0.getTestMethod().getMethodName());
-            if (!isOneWebDriver && ParallelMode.METHODS.equals(parallelMode)) {
-                try {
-                    webDriverAction(WebDriverAction.START);
-                } catch (CosengException e) {
-                    test.setIsFailed(true);
-                    throw new RuntimeException(e);
-                }
+                "Method BEFORE; class [{}], method [{}], thread [{}], test [{}], testHashCode [{}], parallelMode [{}], isOneWebDriver [{}]",
+                method.getTestMethod().getRealClass().getName(),
+                method.getTestMethod().getMethodName(), Thread.currentThread().getId(),
+                test.getName(), test.hashCode(), parallelMode, isOneWebDriver);
+        if (!isOneWebDriver && ParallelMode.METHODS.equals(parallelMode)) {
+            try {
+                webDriverAction(WebDriverAction.START);
+            } catch (CosengException e) {
+                test.setIsFailed(true);
+                throw new RuntimeException(e);
             }
         }
     }
-    /* </IMethodListener> */
+    /* </IMethodListener2> */
 
     /**
      * Web driver action to start or stop the web driver based on the before and
@@ -498,7 +569,7 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
      * @since 2.0
      * @version.coseng
      */
-    private void webDriverAction(WebDriverAction action) throws CosengException {
+    private synchronized void webDriverAction(WebDriverAction action) throws CosengException {
         Thread thread = Thread.currentThread();
         log.debug("Web driver action [{}], thread [{}]", action, thread.getId());
         if (WebDriverAction.START.equals(action)) {
@@ -519,27 +590,74 @@ public class CosengListener extends WebDriverLifecycle implements IExecutionList
     }
 
     /**
-     * Clone test. Deep clone the original for making adjusting the later TestNG
-     * Suite, Test, Class and Method level names.
+     * Notify integrators
      *
-     * @param original
-     *            the original
-     * @return the test
+     * @param trigger
+     *            the trigger
      * @throws CosengException
      *             the coseng exception
-     * @see com.sios.stc.coseng.run.CosengListener#setCosengContext()
-     * @since 2.1
+     * @since 3.0
      * @version.coseng
      */
-    private static Test cloneTest(Test original) throws CosengException {
-        String name = original.getName();
-        try {
-            Cloner cloner = new Cloner();
-            Test test = cloner.deepClone(original);
-            return test;
-        } catch (Exception e) {
-            throw new CosengException(Message.details(name, "error creating test clone"));
+    private synchronized void notifyIntegrators(TriggerOn trigger) throws CosengException {
+        for (Integrator i : GetIntegrators.wired()) {
+            switch (trigger) {
+                case EXECUTIONSTART:
+                    i.onExecutionStart(test);
+                    break;
+                case EXECUTIONFINISH:
+                    i.onExecutionFinish(test);
+                    break;
+                case SUITESTART:
+                    i.onSuiteStart(test);
+                    break;
+                case SUITEFINISH:
+                    i.onSuiteFinish(test);
+                    break;
+                case TESTSTART:
+                    i.onTestStart(test);
+                    break;
+                case TESTFINISH:
+                    i.onTestFinish(test);
+                    break;
+                case CLASSSTART:
+                    i.onClassStart(test);
+                    break;
+                case CLASSFINISH:
+                    i.onClassFinish(test);
+                    break;
+                case METHODSTART:
+                    if (test.isOneWebDriver()) {
+                        /*
+                         * For tests with one/single web driver it is necessary
+                         * to clear the the test steps, expected and actual test
+                         * step results as there is only one instantiation of
+                         * the field list. If not cleared the fields accumulate
+                         * prior test method execution steps.
+                         */
+                        i.clearAllTestSteps(test);
+                    }
+                    i.onMethodStart(test);
+                    break;
+                case METHODFINISH:
+                    i.onMethodFinish(test);
+                    break;
+                default:
+                    // do nothing
+            }
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.testng.IReporter#generateReport(java.util.List, java.util.List,
+     * java.lang.String)
+     */
+    @Override
+    public synchronized void generateReport(List<XmlSuite> xmlSuites, List<ISuite> suites,
+            String outputDirectory) {
+        // nothing for now
     }
 
 }

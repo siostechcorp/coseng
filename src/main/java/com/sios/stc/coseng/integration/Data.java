@@ -14,43 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sios.stc.coseng.run;
-
-import java.util.ArrayList;
-import java.util.List;
+package com.sios.stc.coseng.integration;
 
 /**
- * The Class Locations defines the execution of Selenium tests; either locally
- * with {@code NODE} or via the Selenium GRID Hub with {@code GRID}.
+ * The Class Data. Stub for integrator data exchange. All integrator data
+ * classes should extend Data and provide a robust deepCopy. Remaining fields
+ * and methods will be implementation specific.
  *
- * @since 2.0
+ * @since 3.0
  * @version.coseng
  */
-class Locations {
+public abstract class Data {
 
     /**
-     * The Enum Location.
+     * Deep copy.
      *
-     * @since 2.0
+     * @return the data
+     * @since 3.0
      * @version.coseng
      */
-    protected static enum Location {
-        NODE, GRID
-    };
+    abstract public Data deepCopy();
 
     /**
-     * Gets the list of location values.
+     * Clear all test steps.
      *
-     * @return the list
-     * @since 2.0
+     * @since 3.0
      * @version.coseng
      */
-    protected static List<String> get() {
-        List<String> locations = new ArrayList<String>();
-        for (Location location : Location.values()) {
-            locations.add(location.toString());
-        }
-        return locations;
-    }
+    abstract protected void clearAllTestSteps();
 
 }

@@ -2,42 +2,45 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.sios.stc.coseng</groupId>
+  <groupId>com.sios.stc</groupId>
   <artifactId>coseng</artifactId>
-  <version>2.2.0</version>
+  <version>3.0</version>
   <properties>
-    <coseng.version>2.2</coseng.version>
+    <coseng.version>3.0</coseng.version>
+    <!-- 20170426 Disable Maven 'Download JavaDoc' 3.4.0 selenium-java-javadoc has errors; https://github.com/SeleniumHQ/selenium/issues/3895 -->
+    <selenium.version>3.5.3</selenium.version>
+    <testng.version>6.11</testng.version>
+    <!-- NGWebDriver 1.0 is available; but breaks -->
+    <ngwebdriver.version>1.0</ngwebdriver.version>
+    <versionone.api.version>16.0.0</versionone.api.version>
     <java.source.version>1.8</java.source.version>
     <java.target.version>1.8</java.target.version>
-    <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
+    <maven.compiler.plugin.version>3.6.1</maven.compiler.plugin.version>
     <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
-    <selenium.version>3.0.1</selenium.version>
-    <hamcrest.version>1.3</hamcrest.version>
-    <apache.commons-cli.version>1.3.1</apache.commons-cli.version>
-    <testng.version>6.9.13.6</testng.version>
-    <apache.commons-io.version>2.5</apache.commons-io.version>
-    <gson.version>2.7</gson.version>
-    <apache.commons-lang3.version>3.4</apache.commons-lang3.version>
-    <ngwebdriver.version>0.9.7</ngwebdriver.version>
-    <jdom2.version>2.0.6</jdom2.version>
-    <robust-cloning>1.9.3</robust-cloning>
-    <log4j.version>2.6.2</log4j.version>
     <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
     <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
+    <apache.commons-cli.version>1.4</apache.commons-cli.version>
+    <apache.commons-io.version>2.5</apache.commons-io.version>
+    <apache.commons-lang3.version>3.5</apache.commons-lang3.version>
+    <gson.version>2.8.0</gson.version>
+    <jdom2.version>2.0.6</jdom2.version>
+    <log4j.version>2.8.2</log4j.version>
+    <guice.version>4.1.0</guice.version>
+    <ssh.version>0.1.54</ssh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
-    <!-- Apache Common CLI -->
+    <!-- Selenium -->
     <dependency>
-      <groupId>commons-cli</groupId>
-      <artifactId>commons-cli</artifactId>
-      <version>${apache.commons-cli.version}</version>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>${selenium.version}</version>
     </dependency>
-    <!-- Apache Commons Lang3 -->
+    <!-- AngularJS/Selenium/Java WebDriver -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>${apache.commons-lang3.version}</version>
+      <groupId>com.paulhammant</groupId>
+      <artifactId>ngwebdriver</artifactId>
+      <version>${ngwebdriver.version}</version>
     </dependency>
     <!-- TestNG -->
     <dependency>
@@ -47,18 +50,17 @@
       <!-- COMMENT <scope> as we want in main -->
       <!-- <scope>test</scope> -->
     </dependency>
-    <!-- Google-GSON -->
+    <!-- VersionOne Integration -->
     <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>${gson.version}</version>
+      <groupId>com.versionone</groupId>
+      <artifactId>VersionOne.SDK.Java.APIClient</artifactId>
+      <version>${versionone.api.version}</version>
     </dependency>
-    <!-- Hamcrest -->
+    <!-- Apache Common CLI -->
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-parent</artifactId>
-      <version>${hamcrest.version}</version>
-      <type>pom</type>
+      <groupId>commons-cli</groupId>
+      <artifactId>commons-cli</artifactId>
+      <version>${apache.commons-cli.version}</version>
     </dependency>
     <!-- Apache Commons IO -->
     <dependency>
@@ -66,17 +68,23 @@
       <artifactId>commons-io</artifactId>
       <version>${apache.commons-io.version}</version>
     </dependency>
+    <!-- Google-GSON -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+    </dependency>
     <!-- JDOM -->
     <dependency>
       <groupId>org.jdom</groupId>
       <artifactId>jdom2</artifactId>
       <version>${jdom2.version}</version>
     </dependency>
-    <!-- Robust Cloning -->
+    <!-- Google Guice -->
     <dependency>
-      <groupId>uk.com.robust-it</groupId>
-      <artifactId>cloning</artifactId>
-      <version>${robust-cloning}</version>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <version>${guice.version}</version>
     </dependency>
     <!-- Log4j -->
     <dependency>
@@ -89,45 +97,14 @@
       <artifactId>log4j-core</artifactId>
       <version>${log4j.version}</version>
     </dependency>
-    <!-- Opera support omitted; lackluster anyway... -->
-    <!-- Selenium -->
+    <!--  SSH Client -->
     <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-firefox-driver</artifactId>
-      <version>${selenium.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-chrome-driver</artifactId>
-      <version>${selenium.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-ie-driver</artifactId>
-      <version>${selenium.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-support</artifactId>
-      <version>${selenium.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-java</artifactId>
-      <version>${selenium.version}</version>
-    </dependency>
-    <!-- AngularJS/Selenium/Java WebDriver -->
-    <dependency>
-      <groupId>com.paulhammant</groupId>
-      <artifactId>ngwebdriver</artifactId>
-      <version>${ngwebdriver.version}</version>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch</artifactId>
+      <version>${ssh.version}</version>
     </dependency>
   </dependencies>
   <build>
-    <!-- <resources> <resource> <directory>src/main/resources</directory> </resource> <resource> <directory>src/main/resources/coseng/configs</directory> 
-      </resource> <resource> <directory>src/main/resources/coseng/suites</directory> </resource> <resource> 
-      <directory>src/main/resources/coseng/tests</directory> </resource> <resource> <directory>src/main/resources/licenses</directory> 
-      </resource> </resources> -->
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -241,4 +218,3 @@
     <url>git:https://github.com/siostechcorp/coseng.git</url>
   </scm>
 </project>
-

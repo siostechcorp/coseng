@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,25 @@
  */
 package com.sios.stc.coseng.run;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Platform;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonIOException;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonSyntaxException;
 import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
+import com.sios.stc.coseng.util.Resource;
 
 /**
  * The Class GetTests for deserializing Node and Tests JSON configuration
@@ -77,21 +73,12 @@ class GetTests {
      * @since 2.0
      * @version.coseng
      */
-    protected static Tests with(String jsonNode, InputStream jsonNodeInput, String jsonTests,
-            InputStream jsonTestsInput) throws CosengException {
-        Gson gson;
-        Reader jsonReader;
+    protected static Tests with(String jsonNode, String jsonTests) throws CosengException {
         /*
          * Read the node configuration file first; feeds into Validate.tests()
          */
-        if (jsonNodeInput != null) {
-            try {
-                gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
-                jsonReader = new InputStreamReader(jsonNodeInput);
-                node = gson.fromJson(jsonReader, Node.class);
-            } catch (JsonIOException | JsonSyntaxException | IllegalArgumentException e) {
-                throw new CosengException("Exception reading Node JSON [" + jsonNode + "]", e);
-            }
+        if (jsonNode != null) {
+            node = (Node) Resource.getObjectFromJson(jsonNode, Node.class);
         } else {
             /* Doesn't have to exist; set defaults if absent; see below */
             log.warn("Node JSON not provided; using defaults");
@@ -120,17 +107,16 @@ class GetTests {
                     return Location.valueOf(json.getAsString().toUpperCase());
                 }
             };
+            Map<Class<?>, JsonDeserializer<?>> typeAdapters =
+                    new HashMap<Class<?>, JsonDeserializer<?>>();
+            typeAdapters.put(Platform.class, platformTypeDeserializer);
+            typeAdapters.put(Browser.class, browserTypeDeserializer);
+            typeAdapters.put(Location.class, locationTypeDeserializer);
             /* Read the COSENG Tests JSON configuration file */
-            gson = new GsonBuilder().registerTypeAdapter(Platform.class, platformTypeDeserializer)
-                    .registerTypeAdapter(Browser.class, browserTypeDeserializer)
-                    .registerTypeAdapter(Location.class, locationTypeDeserializer)
-                    .excludeFieldsWithoutExposeAnnotation().create();
-            jsonReader = new InputStreamReader(jsonTestsInput);
-            tests = gson.fromJson(jsonReader, Tests.class);
+            tests = (Tests) Resource.getObjectFromJson(jsonTests, typeAdapters, Tests.class);
             /* Validate the tests */
             Validate.tests(node, tests);
-        } catch (CosengException | JsonIOException | JsonSyntaxException | IllegalArgumentException
-                | NullPointerException e) {
+        } catch (Exception e) {
             throw new CosengException("Exception reading Tests JSON [" + jsonTests + "]", e);
         }
         return tests;

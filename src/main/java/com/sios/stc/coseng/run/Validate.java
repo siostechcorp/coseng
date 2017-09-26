@@ -1,6 +1,6 @@
 /*
  * Concurrent Selenium TestNG (COSENG)
- * Copyright (c) 2013-2016 SIOS Technology Corp.  All rights reserved.
+ * Copyright (c) 2013-2017 SIOS Technology Corp.  All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.openqa.selenium.Platform;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 
-import com.rits.cloning.Cloner;
 import com.sios.stc.coseng.RunTests;
 import com.sios.stc.coseng.run.Browsers.Browser;
 import com.sios.stc.coseng.run.Locations.Location;
@@ -240,7 +239,6 @@ class Validate {
      * @throws CosengException
      *             the coseng exception
      * @see com.sios.stc.coseng.run.Validate#newTests(Test, Platform)
-     * @see com.sios.stc.coseng.run.Validate#cloneTest(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -254,35 +252,12 @@ class Validate {
         newNames.add(platform.toString());
         newNames.add(browser.toString());
         String newName = StringUtils.join(newNames, separator);
-        Test test = cloneTest(original);
+        Test test = original.deepCopy();
         test.setName(newName.toLowerCase());
         test.setPlatform(platform);
         test.setBrowser(browser);
         test.setIsSynthetic(true);
         return test;
-    }
-
-    /**
-     * Clone test. Deep clone the original for making test combinations.
-     *
-     * @param original
-     *            the original
-     * @return the test
-     * @throws CosengException
-     *             the coseng exception
-     * @see com.sios.stc.coseng.run.Validate#newTest(Test, Platform, Browser)
-     * @since 2.0
-     * @version.coseng
-     */
-    private static Test cloneTest(Test original) throws CosengException {
-        String name = original.getName();
-        try {
-            Cloner cloner = new Cloner();
-            Test test = cloner.deepClone(original);
-            return test;
-        } catch (Exception e) {
-            throw new CosengException(Message.details(name, "error creating test clone"));
-        }
     }
 
     /**
@@ -357,7 +332,7 @@ class Validate {
      * @see com.sios.stc.coseng.run.Validate#webDriverTimeout(Test)
      * @see com.sios.stc.coseng.run.Validate#webDriverWaitTimeout(Test)
      * @see com.sios.stc.coseng.run.Validate#warnBaseUrlUndefined(Test)
-     * @see com.sios.stc.coseng.run.Validate#warnBrowserVersionForNode(Test)
+     * @see com.sios.stc.coseng.run.Validate#warnBrowserRequestVersionForNode(Test)
      * @since 2.0
      * @version.coseng
      */
@@ -375,7 +350,7 @@ class Validate {
             webDriverTimeout(test);
             webDriverWaitTimeout(test);
             warnBaseUrlUndefined(test);
-            warnBrowserVersionForNode(test);
+            warnBrowserRequestVersionForNode(test);
         }
     }
 
@@ -631,8 +606,10 @@ class Validate {
         String attrSuiteFile = "suite-file";
         String attrTest = "test";
         String attrPath = "path";
+        String parallelNone = "none";
+        String parallelFalse = "false";
         for (String suite : suites) {
-            InputStream suiteInput = Resource.get(suite);
+            InputStream suiteInput = Resource.getStream(suite);
             /* Read original suite */
             SAXBuilder jdomBuilder = new SAXBuilder();
             Document jdomSuite = null;
@@ -655,21 +632,20 @@ class Validate {
                         "Parallel mode [" + ParallelMode.INSTANCES + "] unsupported");
             }
             /*
-             * ALL XML suites must have parallel="false" or be "none" if using
-             * one WebDriver. Known that ParallelMode.FALSE is deprecated; but
-             * code still varies on return value of "false|none" when parameter
-             * absent. TODO: Remove "FALSE" conditional once TestNG fully
-             * deprecates ParallelMode.FALSE in XML DTD.
+             * ALL XML suites must have parallel="false" if using one WebDriver.
+             * 20170331 Since testng-1.0.dtd still in conflict with the TestNG
+             * code base (6.10) convert any parallel="none" to "false" (none is
+             * the default for undefined property in DTD)
              */
             String parallelModeValue = parallelMode.getValue();
+            if (parallelNone.equals(parallelModeValue)) {
+                parallelMode.setValue(parallelFalse);
+            }
             if (isOneWebDriver) {
-                final String FALSE = "false";
-                if (!FALSE.equals(parallelModeValue)
-                        && !ParallelMode.NONE.toString().equals(parallelModeValue)) {
+                if (!parallelFalse.equals(parallelModeValue)) {
                     throw new CosengException(Message.details(name,
-                            "suite [" + suite + "] parallel mode must be [" + FALSE + "] or ["
-                                    + ParallelMode.NONE + "] when onWebDriver is [" + isOneWebDriver
-                                    + "]"));
+                            "suite [" + suite + "] parallel mode must be [" + parallelFalse
+                                    + "] when onWebDriver is [" + isOneWebDriver + "]"));
                 }
             }
             /*
@@ -844,14 +820,14 @@ class Validate {
      * @since 2.0
      * @version.coseng
      */
-    private static void warnBrowserVersionForNode(Test test) {
+    private static void warnBrowserRequestVersionForNode(Test test) {
         String name = test.getName();
         Location location = test.getLocation();
-        String browserVersion = test.getBrowserVersion();
+        String browserRequestVersion = test.getBrowserRequestVersion();
         if (Location.NODE.equals(location)
-                && !Browsers.BROWSER_VERSION_DEFAULT.equals(browserVersion)) {
+                && !Browsers.BROWSER_VERSION_DEFAULT.equals(browserRequestVersion)) {
             log.warn(Message.details(name,
-                    "browserVersion ignored for test at location [" + location + "]"));
+                    "browserRequestVersion ignored for test at location [" + location + "]"));
         }
     }
 
